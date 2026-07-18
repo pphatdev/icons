@@ -1,778 +1,778 @@
 [
   {
     "name": "7zip",
-    "target": "icons/7zip.svg"
+    "target": "brands/7zip.svg"
   },
   {
     "name": "algolia",
-    "target": "icons/algolia.svg"
+    "target": "brands/algolia.svg"
   },
   {
     "name": "angular",
-    "target": "icons/angular.svg"
+    "target": "brands/angular.svg"
   },
   {
     "name": "ansible",
-    "target": "icons/ansible.svg"
+    "target": "brands/ansible.svg"
   },
   {
     "name": "antdesign",
-    "target": "icons/antdesign.svg"
+    "target": "brands/antdesign.svg"
   },
   {
     "name": "apachekafka",
-    "target": "icons/apachekafka.svg"
+    "target": "brands/apachekafka.svg"
   },
   {
     "name": "apple",
-    "target": "icons/apple.svg"
+    "target": "brands/apple.svg"
   },
   {
     "name": "archlinux",
-    "target": "icons/archlinux.svg"
+    "target": "brands/archlinux.svg"
   },
   {
     "name": "argo",
-    "target": "icons/argo.svg"
+    "target": "brands/argo.svg"
   },
   {
     "name": "awesomelists",
-    "target": "icons/awesomelists.svg"
+    "target": "brands/awesomelists.svg"
   },
   {
     "name": "bitcoincash",
-    "target": "icons/bitcoincash.svg"
+    "target": "brands/bitcoincash.svg"
   },
   {
     "name": "bootstrap",
-    "target": "icons/bootstrap.svg"
+    "target": "brands/bootstrap.svg"
   },
   {
     "name": "brave",
-    "target": "icons/brave.svg"
+    "target": "brands/brave.svg"
   },
   {
     "name": "bun",
-    "target": "icons/bun.svg"
+    "target": "brands/bun.svg"
   },
   {
     "name": "canonical",
-    "target": "icons/canonical.svg"
+    "target": "brands/canonical.svg"
   },
   {
     "name": "chartdotjs",
-    "target": "icons/chartdotjs.svg"
+    "target": "brands/chartdotjs.svg"
   },
   {
     "name": "claude",
-    "target": "icons/claude.svg"
+    "target": "brands/claude.svg"
   },
   {
     "name": "cline",
-    "target": "icons/cline.svg"
+    "target": "brands/cline.svg"
   },
   {
     "name": "cloudflare",
-    "target": "icons/cloudflare.svg"
+    "target": "brands/cloudflare.svg"
   },
   {
     "name": "cloudways",
-    "target": "icons/cloudways.svg"
+    "target": "brands/cloudways.svg"
   },
   {
     "name": "codeberg",
-    "target": "icons/codeberg.svg"
+    "target": "brands/codeberg.svg"
   },
   {
     "name": "codecov",
-    "target": "icons/codecov.svg"
+    "target": "brands/codecov.svg"
   },
   {
     "name": "codeproject",
-    "target": "icons/codeproject.svg"
+    "target": "brands/codeproject.svg"
   },
   {
     "name": "coderabbit",
-    "target": "icons/coderabbit.svg"
+    "target": "brands/coderabbit.svg"
   },
   {
     "name": "composer",
-    "target": "icons/composer.svg"
+    "target": "brands/composer.svg"
   },
   {
     "name": "cplusplus",
-    "target": "icons/cplusplus.svg"
+    "target": "brands/cplusplus.svg"
   },
   {
     "name": "createreactapp",
-    "target": "icons/createreactapp.svg"
+    "target": "brands/createreactapp.svg"
   },
   {
     "name": "csharp",
-    "target": "icons/csharp.svg"
+    "target": "brands/csharp.svg"
   },
   {
     "name": "css",
-    "target": "icons/css.svg"
+    "target": "brands/css.svg"
   },
   {
     "name": "dart",
-    "target": "icons/dart.svg"
+    "target": "brands/dart.svg"
   },
   {
     "name": "datadog",
-    "target": "icons/datadog.svg"
+    "target": "brands/datadog.svg"
   },
   {
     "name": "deno",
-    "target": "icons/deno.svg"
+    "target": "brands/deno.svg"
   },
   {
     "name": "denodeploy",
-    "target": "icons/denodeploy.svg"
+    "target": "brands/denodeploy.svg"
   },
   {
     "name": "devdotto",
-    "target": "icons/devdotto.svg"
+    "target": "brands/devdotto.svg"
   },
   {
     "name": "digitalocean",
-    "target": "icons/digitalocean.svg"
+    "target": "brands/digitalocean.svg"
   },
   {
     "name": "django",
-    "target": "icons/django.svg"
+    "target": "brands/django.svg"
   },
   {
     "name": "docker",
-    "target": "icons/docker.svg"
+    "target": "brands/docker.svg"
   },
   {
     "name": "dotnet",
-    "target": "icons/dotnet.svg"
+    "target": "brands/dotnet.svg"
   },
   {
     "name": "drizzle",
-    "target": "icons/drizzle.svg"
+    "target": "brands/drizzle.svg"
   },
   {
     "name": "editorconfig",
-    "target": "icons/editorconfig.svg"
+    "target": "brands/editorconfig.svg"
   },
   {
     "name": "ejs",
-    "target": "icons/ejs.svg"
+    "target": "brands/ejs.svg"
   },
   {
     "name": "emberdotjs",
-    "target": "icons/emberdotjs.svg"
+    "target": "brands/emberdotjs.svg"
   },
   {
     "name": "ethereum",
-    "target": "icons/ethereum.svg"
+    "target": "brands/ethereum.svg"
   },
   {
     "name": "expo",
-    "target": "icons/expo.svg"
+    "target": "brands/expo.svg"
   },
   {
     "name": "express",
-    "target": "icons/express.svg"
+    "target": "brands/express.svg"
   },
   {
     "name": "facebook",
-    "target": "icons/facebook.svg"
+    "target": "brands/facebook.svg"
   },
   {
     "name": "fastapi",
-    "target": "icons/fastapi.svg"
+    "target": "brands/fastapi.svg"
   },
   {
     "name": "fastify",
-    "target": "icons/fastify.svg"
+    "target": "brands/fastify.svg"
   },
   {
     "name": "flutter",
-    "target": "icons/flutter.svg"
+    "target": "brands/flutter.svg"
   },
   {
     "name": "flydotio",
-    "target": "icons/flydotio.svg"
+    "target": "brands/flydotio.svg"
   },
   {
     "name": "fontawesome",
-    "target": "icons/fontawesome.svg"
+    "target": "brands/fontawesome.svg"
   },
   {
     "name": "gatsby",
-    "target": "icons/gatsby.svg"
+    "target": "brands/gatsby.svg"
   },
   {
     "name": "git",
-    "target": "icons/git.svg"
+    "target": "brands/git.svg"
   },
   {
     "name": "gitbook",
-    "target": "icons/gitbook.svg"
+    "target": "brands/gitbook.svg"
   },
   {
     "name": "gitcode",
-    "target": "icons/gitcode.svg"
+    "target": "brands/gitcode.svg"
   },
   {
     "name": "github",
-    "target": "icons/github.svg"
+    "target": "brands/github.svg"
   },
   {
     "name": "githubactions",
-    "target": "icons/githubactions.svg"
+    "target": "brands/githubactions.svg"
   },
   {
     "name": "githubcopilot",
-    "target": "icons/githubcopilot.svg"
+    "target": "brands/githubcopilot.svg"
   },
   {
     "name": "gitignoredotio",
-    "target": "icons/gitignoredotio.svg"
+    "target": "brands/gitignoredotio.svg"
   },
   {
     "name": "gitkraken",
-    "target": "icons/gitkraken.svg"
+    "target": "brands/gitkraken.svg"
   },
   {
     "name": "gitlab",
-    "target": "icons/gitlab.svg"
+    "target": "brands/gitlab.svg"
   },
   {
     "name": "gitpod",
-    "target": "icons/gitpod.svg"
+    "target": "brands/gitpod.svg"
   },
   {
     "name": "go",
-    "target": "icons/go.svg"
+    "target": "brands/go.svg"
   },
   {
     "name": "googledrive",
-    "target": "icons/googledrive.svg"
+    "target": "brands/googledrive.svg"
   },
   {
     "name": "googlegemini",
-    "target": "icons/googlegemini.svg"
+    "target": "brands/googlegemini.svg"
   },
   {
     "name": "grafana",
-    "target": "icons/grafana.svg"
+    "target": "brands/grafana.svg"
   },
   {
     "name": "graphql",
-    "target": "icons/graphql.svg"
+    "target": "brands/graphql.svg"
   },
   {
     "name": "gravatar",
-    "target": "icons/gravatar.svg"
+    "target": "brands/gravatar.svg"
   },
   {
     "name": "gsap",
-    "target": "icons/gsap.svg"
+    "target": "brands/gsap.svg"
   },
   {
     "name": "handlebarsjs",
-    "target": "icons/handlebarsjs.svg"
+    "target": "brands/handlebarsjs.svg"
   },
   {
     "name": "happycow",
-    "target": "icons/happycow.svg"
+    "target": "brands/happycow.svg"
   },
   {
     "name": "heroui",
-    "target": "icons/heroui.svg"
+    "target": "brands/heroui.svg"
   },
   {
     "name": "html",
-    "target": "icons/html.svg"
+    "target": "brands/html.svg"
   },
   {
     "name": "htmx",
-    "target": "icons/htmx.svg"
+    "target": "brands/htmx.svg"
   },
   {
     "name": "huggingface",
-    "target": "icons/huggingface.svg"
+    "target": "brands/huggingface.svg"
   },
   {
     "name": "hugo",
-    "target": "icons/hugo.svg"
+    "target": "brands/hugo.svg"
   },
   {
     "name": "i18next",
-    "target": "icons/i18next.svg"
+    "target": "brands/i18next.svg"
   },
   {
     "name": "iconjar",
-    "target": "icons/iconjar.svg"
+    "target": "brands/iconjar.svg"
   },
   {
     "name": "immersivetranslate",
-    "target": "icons/immersivetranslate.svg"
+    "target": "brands/immersivetranslate.svg"
   },
   {
     "name": "instagram",
-    "target": "icons/instagram.svg"
+    "target": "brands/instagram.svg"
   },
   {
     "name": "intellijidea",
-    "target": "icons/intellijidea.svg"
+    "target": "brands/intellijidea.svg"
   },
   {
     "name": "itunes",
-    "target": "icons/itunes.svg"
+    "target": "brands/itunes.svg"
   },
   {
     "name": "javascript",
-    "target": "icons/javascript.svg"
+    "target": "brands/javascript.svg"
   },
   {
     "name": "jenkins",
-    "target": "icons/jenkins.svg"
+    "target": "brands/jenkins.svg"
   },
   {
     "name": "jinja",
-    "target": "icons/jinja.svg"
+    "target": "brands/jinja.svg"
   },
   {
     "name": "jitsi",
-    "target": "icons/jitsi.svg"
+    "target": "brands/jitsi.svg"
   },
   {
     "name": "jquery",
-    "target": "icons/jquery.svg"
+    "target": "brands/jquery.svg"
   },
   {
     "name": "json",
-    "target": "icons/json.svg"
+    "target": "brands/json.svg"
   },
   {
     "name": "kalilinux",
-    "target": "icons/kalilinux.svg"
+    "target": "brands/kalilinux.svg"
   },
   {
     "name": "kotlin",
-    "target": "icons/kotlin.svg"
+    "target": "brands/kotlin.svg"
   },
   {
     "name": "kubernetes",
-    "target": "icons/kubernetes.svg"
+    "target": "brands/kubernetes.svg"
   },
   {
     "name": "laravel",
-    "target": "icons/laravel.svg"
+    "target": "brands/laravel.svg"
   },
   {
     "name": "less",
-    "target": "icons/less.svg"
+    "target": "brands/less.svg"
   },
   {
     "name": "line",
-    "target": "icons/line.svg"
+    "target": "brands/line.svg"
   },
   {
     "name": "linear",
-    "target": "icons/linear.svg"
+    "target": "brands/linear.svg"
   },
   {
     "name": "linux",
-    "target": "icons/linux.svg"
+    "target": "brands/linux.svg"
   },
   {
     "name": "lit",
-    "target": "icons/lit.svg"
+    "target": "brands/lit.svg"
   },
   {
     "name": "livewire",
-    "target": "icons/livewire.svg"
+    "target": "brands/livewire.svg"
   },
   {
     "name": "mariadb",
-    "target": "icons/mariadb.svg"
+    "target": "brands/mariadb.svg"
   },
   {
     "name": "mariadbfoundation",
-    "target": "icons/mariadbfoundation.svg"
+    "target": "brands/mariadbfoundation.svg"
   },
   {
     "name": "markdown",
-    "target": "icons/markdown.svg"
+    "target": "brands/markdown.svg"
   },
   {
     "name": "marko",
-    "target": "icons/marko.svg"
+    "target": "brands/marko.svg"
   },
   {
     "name": "mcp",
-    "target": "icons/mcp.svg"
+    "target": "brands/mcp.svg"
   },
   {
     "name": "meilisearch",
-    "target": "icons/meilisearch.svg"
+    "target": "brands/meilisearch.svg"
   },
   {
     "name": "mistralai",
-    "target": "icons/mistralai.svg"
+    "target": "brands/mistralai.svg"
   },
   {
     "name": "mongodb",
-    "target": "icons/mongodb.svg"
+    "target": "brands/mongodb.svg"
   },
   {
     "name": "mui",
-    "target": "icons/mui.svg"
+    "target": "brands/mui.svg"
   },
   {
     "name": "mysql",
-    "target": "icons/mysql.svg"
+    "target": "brands/mysql.svg"
   },
   {
     "name": "n8n",
-    "target": "icons/n8n.svg"
+    "target": "brands/n8n.svg"
   },
   {
     "name": "neovim",
-    "target": "icons/neovim.svg"
+    "target": "brands/neovim.svg"
   },
   {
     "name": "nestjs",
-    "target": "icons/nestjs.svg"
+    "target": "brands/nestjs.svg"
   },
   {
     "name": "netlify",
-    "target": "icons/netlify.svg"
+    "target": "brands/netlify.svg"
   },
   {
     "name": "nextjs",
-    "target": "icons/nextjs.svg"
+    "target": "brands/nextjs.svg"
   },
   {
     "name": "nginx",
-    "target": "icons/nginx.svg"
+    "target": "brands/nginx.svg"
   },
   {
     "name": "nodejs",
-    "target": "icons/nodejs.svg"
+    "target": "brands/nodejs.svg"
   },
   {
     "name": "notion",
-    "target": "icons/notion.svg"
+    "target": "brands/notion.svg"
   },
   {
     "name": "npm",
-    "target": "icons/npm.svg"
+    "target": "brands/npm.svg"
   },
   {
     "name": "nuxt",
-    "target": "icons/nuxt.svg"
+    "target": "brands/nuxt.svg"
   },
   {
     "name": "nvm",
-    "target": "icons/nvm.svg"
+    "target": "brands/nvm.svg"
   },
   {
     "name": "opensourceinitiative",
-    "target": "icons/opensourceinitiative.svg"
+    "target": "brands/opensourceinitiative.svg"
   },
   {
     "name": "peerlist",
-    "target": "icons/peerlist.svg"
+    "target": "brands/peerlist.svg"
   },
   {
     "name": "php",
-    "target": "icons/php.svg"
+    "target": "brands/php.svg"
   },
   {
     "name": "phpstorm",
-    "target": "icons/phpstorm.svg"
+    "target": "brands/phpstorm.svg"
   },
   {
     "name": "pm2",
-    "target": "icons/pm2.svg"
+    "target": "brands/pm2.svg"
   },
   {
     "name": "postcss",
-    "target": "icons/postcss.svg"
+    "target": "brands/postcss.svg"
   },
   {
     "name": "postgresql",
-    "target": "icons/postgresql.svg"
+    "target": "brands/postgresql.svg"
   },
   {
     "name": "postman",
-    "target": "icons/postman.svg"
+    "target": "brands/postman.svg"
   },
   {
     "name": "preact",
-    "target": "icons/preact.svg"
+    "target": "brands/preact.svg"
   },
   {
     "name": "primereact",
-    "target": "icons/primereact.svg"
+    "target": "brands/primereact.svg"
   },
   {
     "name": "primevue",
-    "target": "icons/primevue.svg"
+    "target": "brands/primevue.svg"
   },
   {
     "name": "prisma",
-    "target": "icons/prisma.svg"
+    "target": "brands/prisma.svg"
   },
   {
     "name": "prometheus",
-    "target": "icons/prometheus.svg"
+    "target": "brands/prometheus.svg"
   },
   {
     "name": "pug",
-    "target": "icons/pug.svg"
+    "target": "brands/pug.svg"
   },
   {
     "name": "pwa",
-    "target": "icons/pwa.svg"
+    "target": "brands/pwa.svg"
   },
   {
     "name": "python",
-    "target": "icons/python.svg"
+    "target": "brands/python.svg"
   },
   {
     "name": "quasar",
-    "target": "icons/quasar.svg"
+    "target": "brands/quasar.svg"
   },
   {
     "name": "qwik",
-    "target": "icons/qwik.svg"
+    "target": "brands/qwik.svg"
   },
   {
     "name": "railway",
-    "target": "icons/railway.svg"
+    "target": "brands/railway.svg"
   },
   {
     "name": "rapid",
-    "target": "icons/rapid.svg"
+    "target": "brands/rapid.svg"
   },
   {
     "name": "react",
-    "target": "icons/react.svg"
+    "target": "brands/react.svg"
   },
   {
     "name": "reactos",
-    "target": "icons/reactos.svg"
+    "target": "brands/reactos.svg"
   },
   {
     "name": "reactquery",
-    "target": "icons/reactquery.svg"
+    "target": "brands/reactquery.svg"
   },
   {
     "name": "reactrouter",
-    "target": "icons/reactrouter.svg"
+    "target": "brands/reactrouter.svg"
   },
   {
     "name": "redis",
-    "target": "icons/redis.svg"
+    "target": "brands/redis.svg"
   },
   {
     "name": "redwoodjs",
-    "target": "icons/redwoodjs.svg"
+    "target": "brands/redwoodjs.svg"
   },
   {
     "name": "remix",
-    "target": "icons/remix.svg"
+    "target": "brands/remix.svg"
   },
   {
     "name": "republicofgamers",
-    "target": "icons/republicofgamers.svg"
+    "target": "brands/republicofgamers.svg"
   },
   {
     "name": "runrundotit",
-    "target": "icons/runrundotit.svg"
+    "target": "brands/runrundotit.svg"
   },
   {
     "name": "rust",
-    "target": "icons/rust.svg"
+    "target": "brands/rust.svg"
   },
   {
     "name": "samsung",
-    "target": "icons/samsung.svg"
+    "target": "brands/samsung.svg"
   },
   {
     "name": "sap",
-    "target": "icons/sap.svg"
+    "target": "brands/sap.svg"
   },
   {
     "name": "sass",
-    "target": "icons/sass.svg"
+    "target": "brands/sass.svg"
   },
   {
     "name": "shadcnui",
-    "target": "icons/shadcnui.svg"
+    "target": "brands/shadcnui.svg"
   },
   {
     "name": "sharp",
-    "target": "icons/sharp.svg"
+    "target": "brands/sharp.svg"
   },
   {
     "name": "solid",
-    "target": "icons/solid.svg"
+    "target": "brands/solid.svg"
   },
   {
     "name": "sonar",
-    "target": "icons/sonar.svg"
+    "target": "brands/sonar.svg"
   },
   {
     "name": "soundcloud",
-    "target": "icons/soundcloud.svg"
+    "target": "brands/soundcloud.svg"
   },
   {
     "name": "spring",
-    "target": "icons/spring.svg"
+    "target": "brands/spring.svg"
   },
   {
     "name": "sqlite",
-    "target": "icons/sqlite.svg"
+    "target": "brands/sqlite.svg"
   },
   {
     "name": "stencil",
-    "target": "icons/stencil.svg"
+    "target": "brands/stencil.svg"
   },
   {
     "name": "styledcomponents",
-    "target": "icons/styledcomponents.svg"
+    "target": "brands/styledcomponents.svg"
   },
   {
     "name": "sublimetext",
-    "target": "icons/sublimetext.svg"
+    "target": "brands/sublimetext.svg"
   },
   {
     "name": "supabase",
-    "target": "icons/supabase.svg"
+    "target": "brands/supabase.svg"
   },
   {
     "name": "svelte",
-    "target": "icons/svelte.svg"
+    "target": "brands/svelte.svg"
   },
   {
     "name": "swift",
-    "target": "icons/swift.svg"
+    "target": "brands/swift.svg"
   },
   {
     "name": "tailwindcss",
-    "target": "icons/tailwindcss.svg"
+    "target": "brands/tailwindcss.svg"
   },
   {
     "name": "tanstack",
-    "target": "icons/tanstack.svg"
+    "target": "brands/tanstack.svg"
   },
   {
     "name": "telegram",
-    "target": "icons/telegram.svg"
+    "target": "brands/telegram.svg"
   },
   {
     "name": "termius",
-    "target": "icons/termius.svg"
+    "target": "brands/termius.svg"
   },
   {
     "name": "terraform",
-    "target": "icons/terraform.svg"
+    "target": "brands/terraform.svg"
   },
   {
     "name": "threedotjs",
-    "target": "icons/threedotjs.svg"
+    "target": "brands/threedotjs.svg"
   },
   {
     "name": "tor",
-    "target": "icons/tor.svg"
+    "target": "brands/tor.svg"
   },
   {
     "name": "travisci",
-    "target": "icons/travisci.svg"
+    "target": "brands/travisci.svg"
   },
   {
     "name": "tsnode",
-    "target": "icons/tsnode.svg"
+    "target": "brands/tsnode.svg"
   },
   {
     "name": "typescript",
-    "target": "icons/typescript.svg"
+    "target": "brands/typescript.svg"
   },
   {
     "name": "ubuntu",
-    "target": "icons/ubuntu.svg"
+    "target": "brands/ubuntu.svg"
   },
   {
     "name": "unsplash",
-    "target": "icons/unsplash.svg"
+    "target": "brands/unsplash.svg"
   },
   {
     "name": "vercel",
-    "target": "icons/vercel.svg"
+    "target": "brands/vercel.svg"
   },
   {
     "name": "vim",
-    "target": "icons/vim.svg"
+    "target": "brands/vim.svg"
   },
   {
     "name": "vite",
-    "target": "icons/vite.svg"
+    "target": "brands/vite.svg"
   },
   {
     "name": "vitepress",
-    "target": "icons/vitepress.svg"
+    "target": "brands/vitepress.svg"
   },
   {
     "name": "vitess",
-    "target": "icons/vitess.svg"
+    "target": "brands/vitess.svg"
   },
   {
     "name": "vuedotjs",
-    "target": "icons/vuedotjs.svg"
+    "target": "brands/vuedotjs.svg"
   },
   {
     "name": "vuetify",
-    "target": "icons/vuetify.svg"
+    "target": "brands/vuetify.svg"
   },
   {
     "name": "vueuse",
-    "target": "icons/vueuse.svg"
+    "target": "brands/vueuse.svg"
   },
   {
     "name": "warp",
-    "target": "icons/warp.svg"
+    "target": "brands/warp.svg"
   },
   {
     "name": "webassembly",
-    "target": "icons/webassembly.svg"
+    "target": "brands/webassembly.svg"
   },
   {
     "name": "wondersharefilmora",
-    "target": "icons/wondersharefilmora.svg"
+    "target": "brands/wondersharefilmora.svg"
   },
   {
     "name": "xampp",
-    "target": "icons/xampp.svg"
+    "target": "brands/xampp.svg"
   },
   {
     "name": "xml",
-    "target": "icons/xml.svg"
+    "target": "brands/xml.svg"
   },
   {
     "name": "yaml",
-    "target": "icons/yaml.svg"
+    "target": "brands/yaml.svg"
   },
   {
     "name": "youtube",
-    "target": "icons/youtube.svg"
+    "target": "brands/youtube.svg"
   },
   {
     "name": "youtubemusic",
-    "target": "icons/youtubemusic.svg"
+    "target": "brands/youtubemusic.svg"
   },
   {
     "name": "youtubeshorts",
-    "target": "icons/youtubeshorts.svg"
+    "target": "brands/youtubeshorts.svg"
   }
 ]
