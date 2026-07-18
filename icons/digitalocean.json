@@ -1,0 +1,9 @@
+{
+  "name": "digitalocean",
+  "files": [
+    {
+      "path": "digitalocean.svg",
+      "content": "<svg width=\"48\" height=\"48\" viewBox=\"-10.2941 -10.2941 44.5884 44.5884\" xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"-10.2941\" y=\"-10.2941\" width=\"44.5884\" height=\"44.5884\" rx=\"15\" fill=\"currentColor\" opacity=\"0.1\"/>\n            <style>\n        @keyframes popup {\n            0% {\n                opacity: 0;\n                transform: scale(0);\n            }\n            100% {\n                opacity: 1;\n                transform: scale(1);\n            }\n        }\n        #digitalocean-logo {\n            animation: popup 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;\n        }\n    </style>\n    <g id=\"digitalocean-logo\">\n    <title>DigitalOcean</title><path fill=\"currentColor\" d=\"M12.04 0C5.408-.02.005 5.37.005 11.992h4.638c0-4.923 4.882-8.731 10.064-6.855a6.95 6.95 0 014.147 4.148c1.889 5.177-1.924 10.055-6.84 10.064v-4.61H7.391v4.623h4.61V24c7.86 0 13.967-7.588 11.397-15.83-1.115-3.59-3.985-6.446-7.575-7.575A12.8 12.8 0 0012.039 0zM7.39 19.362H3.828v3.564H7.39zm-3.563 0v-2.978H.85v2.978z\" />\n    </g>\n</svg>"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "vercel",
+  "files": [
+    {
+      "path": "vercel.svg",
+      "content": "<svg width=\"48\" height=\"48\" viewBox=\"-10.2941 -10.2941 44.5884 44.5884\" xmlns=\"http://www.w3.org/2000/svg\">\n    <rect x=\"-10.2941\" y=\"-10.2941\" width=\"44.5884\" height=\"44.5884\" rx=\"15\" fill=\"currentColor\" opacity=\"0.1\"/>\n    <style>\n        @keyframes popup {\n            0% {\n                opacity: 0;\n                transform: scale(0);\n            }\n            100% {\n                opacity: 1;\n                transform: scale(1);\n            }\n        }\n        #vercel-logo {\n            animation: popup 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;\n        }\n    </style>\n    <g id=\"vercel-logo\">\n        <title>Vercel</title><path fill=\"currentColor\" d=\"m12 1.608 12 20.784H0Z\"/>\n    </g>\n</svg>"
+    }
+  ]
+}

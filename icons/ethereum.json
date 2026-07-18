@@ -1,0 +1,9 @@
+{
+  "name": "ethereum",
+  "files": [
+    {
+      "path": "ethereum.svg",
+      "content": "<svg width=\"48\" height=\"48\" viewBox=\"-10.2941 -10.2941 44.5884 44.5884\" xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"-10.2941\" y=\"-10.2941\" width=\"44.5884\" height=\"44.5884\" rx=\"15\" fill=\"currentColor\" opacity=\"0.1\"/>\n            <style>\n        @keyframes popup {\n            0% {\n                opacity: 0;\n                transform: scale(0);\n            }\n            100% {\n                opacity: 1;\n                transform: scale(1);\n            }\n        }\n        #ethereum-logo {\n            animation: popup 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;\n        }\n    </style>\n    <g id=\"ethereum-logo\">\n    <title>Ethereum</title><path fill=\"currentColor\" d=\"M11.944 17.97L4.58 13.62 11.943 24l7.37-10.38-7.372 4.35h.003zM12.056 0L4.69 12.223l7.365 4.354 7.365-4.35L12.056 0z\" />\n    </g>\n</svg>"
+    }
+  ]
+}

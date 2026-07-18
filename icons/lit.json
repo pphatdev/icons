@@ -1,0 +1,9 @@
+{
+  "name": "lit",
+  "files": [
+    {
+      "path": "lit.svg",
+      "content": "<svg width=\"48\" height=\"48\" viewBox=\"0 0 48 48\" xmlns=\"http://www.w3.org/2000/svg\">\n    <path opacity=\"0.1\" d=\"M31.8523 0H16.1477C7.22957 0 2.65694e-07 7.22957 2.65694e-07 16.1477V31.8523C2.65694e-07 40.7704 7.22957 48 16.1477 48H31.8523C40.7704 48 48 40.7704 48 31.8523V16.1477C48 7.22957 40.7704 0 31.8523 0Z\" fill=\"currentColor\"/>\n    <style>\n        @keyframes popup {\n            0% {\n                opacity: 0;\n                transform: scale(0);\n            }\n            100% {\n                opacity: 1;\n                transform: scale(1);\n            }\n        }\n        #lit-logo {\n            animation: popup 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;\n        }\n    </style>\n    <g id=\"lit-logo\">\n        <path d=\"M14 21.6L18.8 26.4V36L14 31.2V21.6ZM18.8 16.8V26.4L23.6 21.6V12L18.8 16.8ZM23.6 21.6V31.2L28.4 26.4V16.8L23.6 21.6ZM28.4 26.4V36L33.2 31.2V21.6L28.4 26.4Z\" fill=\"currentColor\"/>\n    </g>\n</svg>"
+    }
+  ]
+}

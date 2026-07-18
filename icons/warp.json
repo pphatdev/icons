@@ -1,0 +1,9 @@
+{
+  "name": "warp",
+  "files": [
+    {
+      "path": "warp.svg",
+      "content": "<svg width=\"48\" height=\"48\" viewBox=\"-10.2941 -10.2941 44.5884 44.5884\" xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"-10.2941\" y=\"-10.2941\" width=\"44.5884\" height=\"44.5884\" rx=\"15\" fill=\"currentColor\" opacity=\"0.1\"/>\n            <style>\n        @keyframes popup {\n            0% {\n                opacity: 0;\n                transform: scale(0);\n            }\n            100% {\n                opacity: 1;\n                transform: scale(1);\n            }\n        }\n        #warp-logo {\n            animation: popup 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;\n        }\n    </style>\n    <g id=\"warp-logo\">\n    <title>Warp</title><path fill=\"currentColor\" d=\"M12.035 2.723h9.253A2.712 2.712 0 0 1 24 5.435v10.529a2.712 2.712 0 0 1-2.712 2.713H8.047Zm-1.681 2.6L6.766 19.677h5.598l-.399 1.6H2.712A2.712 2.712 0 0 1 0 18.565V8.036a2.712 2.712 0 0 1 2.712-2.712Z\" />\n    </g>\n</svg>"
+    }
+  ]
+}

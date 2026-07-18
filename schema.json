@@ -1,0 +1,17 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Brand-icons Configuration",
+    "description": "Configuration file for pphatdev brand-icons CLI",
+    "type": "object",
+    "properties": {
+        "$schema": {
+            "type": "string"
+        },
+        "iconDir": {
+            "type": "string",
+            "description": "Custom directory where pphat brand-icons will be downloaded and saved.",
+            "default": "icons"
+        }
+    },
+    "additionalProperties": true
+}

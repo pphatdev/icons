@@ -1,0 +1,9 @@
+{
+  "name": "vuetify",
+  "files": [
+    {
+      "path": "vuetify.svg",
+      "content": "<svg width=\"48\" height=\"48\" viewBox=\"-10.2941 -10.2941 44.5884 44.5884\" xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"-10.2941\" y=\"-10.2941\" width=\"44.5884\" height=\"44.5884\" rx=\"15\" fill=\"currentColor\" opacity=\"0.1\"/>\n            <style>\n        @keyframes popup {\n            0% {\n                opacity: 0;\n                transform: scale(0);\n            }\n            100% {\n                opacity: 1;\n                transform: scale(1);\n            }\n        }\n        #vuetify-logo {\n            animation: popup 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;\n        }\n    </style>\n    <g id=\"vuetify-logo\">\n    <title>Vuetify</title><path fill=\"currentColor\" d=\"M6.312 12.564 12.636 1.2H0l6.312 11.364ZM14.94 1.2 7.464 14.64 12 22.8 24 1.2h-9.06Zm4.98 2.4L12 17.856l-1.788-3.216L16.344 3.6h3.576ZM6.312 7.62 4.08 3.6h4.476L6.312 7.62Z\" />\n    </g>\n</svg>"
+    }
+  ]
+}

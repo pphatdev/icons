@@ -1,0 +1,778 @@
+[
+  {
+    "name": "7zip",
+    "target": "icons/7zip.svg"
+  },
+  {
+    "name": "algolia",
+    "target": "icons/algolia.svg"
+  },
+  {
+    "name": "angular",
+    "target": "icons/angular.svg"
+  },
+  {
+    "name": "ansible",
+    "target": "icons/ansible.svg"
+  },
+  {
+    "name": "antdesign",
+    "target": "icons/antdesign.svg"
+  },
+  {
+    "name": "apachekafka",
+    "target": "icons/apachekafka.svg"
+  },
+  {
+    "name": "apple",
+    "target": "icons/apple.svg"
+  },
+  {
+    "name": "archlinux",
+    "target": "icons/archlinux.svg"
+  },
+  {
+    "name": "argo",
+    "target": "icons/argo.svg"
+  },
+  {
+    "name": "awesomelists",
+    "target": "icons/awesomelists.svg"
+  },
+  {
+    "name": "bitcoincash",
+    "target": "icons/bitcoincash.svg"
+  },
+  {
+    "name": "bootstrap",
+    "target": "icons/bootstrap.svg"
+  },
+  {
+    "name": "brave",
+    "target": "icons/brave.svg"
+  },
+  {
+    "name": "bun",
+    "target": "icons/bun.svg"
+  },
+  {
+    "name": "canonical",
+    "target": "icons/canonical.svg"
+  },
+  {
+    "name": "chartdotjs",
+    "target": "icons/chartdotjs.svg"
+  },
+  {
+    "name": "claude",
+    "target": "icons/claude.svg"
+  },
+  {
+    "name": "cline",
+    "target": "icons/cline.svg"
+  },
+  {
+    "name": "cloudflare",
+    "target": "icons/cloudflare.svg"
+  },
+  {
+    "name": "cloudways",
+    "target": "icons/cloudways.svg"
+  },
+  {
+    "name": "codeberg",
+    "target": "icons/codeberg.svg"
+  },
+  {
+    "name": "codecov",
+    "target": "icons/codecov.svg"
+  },
+  {
+    "name": "codeproject",
+    "target": "icons/codeproject.svg"
+  },
+  {
+    "name": "coderabbit",
+    "target": "icons/coderabbit.svg"
+  },
+  {
+    "name": "composer",
+    "target": "icons/composer.svg"
+  },
+  {
+    "name": "cplusplus",
+    "target": "icons/cplusplus.svg"
+  },
+  {
+    "name": "createreactapp",
+    "target": "icons/createreactapp.svg"
+  },
+  {
+    "name": "csharp",
+    "target": "icons/csharp.svg"
+  },
+  {
+    "name": "css",
+    "target": "icons/css.svg"
+  },
+  {
+    "name": "dart",
+    "target": "icons/dart.svg"
+  },
+  {
+    "name": "datadog",
+    "target": "icons/datadog.svg"
+  },
+  {
+    "name": "deno",
+    "target": "icons/deno.svg"
+  },
+  {
+    "name": "denodeploy",
+    "target": "icons/denodeploy.svg"
+  },
+  {
+    "name": "devdotto",
+    "target": "icons/devdotto.svg"
+  },
+  {
+    "name": "digitalocean",
+    "target": "icons/digitalocean.svg"
+  },
+  {
+    "name": "django",
+    "target": "icons/django.svg"
+  },
+  {
+    "name": "docker",
+    "target": "icons/docker.svg"
+  },
+  {
+    "name": "dotnet",
+    "target": "icons/dotnet.svg"
+  },
+  {
+    "name": "drizzle",
+    "target": "icons/drizzle.svg"
+  },
+  {
+    "name": "editorconfig",
+    "target": "icons/editorconfig.svg"
+  },
+  {
+    "name": "ejs",
+    "target": "icons/ejs.svg"
+  },
+  {
+    "name": "emberdotjs",
+    "target": "icons/emberdotjs.svg"
+  },
+  {
+    "name": "ethereum",
+    "target": "icons/ethereum.svg"
+  },
+  {
+    "name": "expo",
+    "target": "icons/expo.svg"
+  },
+  {
+    "name": "express",
+    "target": "icons/express.svg"
+  },
+  {
+    "name": "facebook",
+    "target": "icons/facebook.svg"
+  },
+  {
+    "name": "fastapi",
+    "target": "icons/fastapi.svg"
+  },
+  {
+    "name": "fastify",
+    "target": "icons/fastify.svg"
+  },
+  {
+    "name": "flutter",
+    "target": "icons/flutter.svg"
+  },
+  {
+    "name": "flydotio",
+    "target": "icons/flydotio.svg"
+  },
+  {
+    "name": "fontawesome",
+    "target": "icons/fontawesome.svg"
+  },
+  {
+    "name": "gatsby",
+    "target": "icons/gatsby.svg"
+  },
+  {
+    "name": "git",
+    "target": "icons/git.svg"
+  },
+  {
+    "name": "gitbook",
+    "target": "icons/gitbook.svg"
+  },
+  {
+    "name": "gitcode",
+    "target": "icons/gitcode.svg"
+  },
+  {
+    "name": "github",
+    "target": "icons/github.svg"
+  },
+  {
+    "name": "githubactions",
+    "target": "icons/githubactions.svg"
+  },
+  {
+    "name": "githubcopilot",
+    "target": "icons/githubcopilot.svg"
+  },
+  {
+    "name": "gitignoredotio",
+    "target": "icons/gitignoredotio.svg"
+  },
+  {
+    "name": "gitkraken",
+    "target": "icons/gitkraken.svg"
+  },
+  {
+    "name": "gitlab",
+    "target": "icons/gitlab.svg"
+  },
+  {
+    "name": "gitpod",
+    "target": "icons/gitpod.svg"
+  },
+  {
+    "name": "go",
+    "target": "icons/go.svg"
+  },
+  {
+    "name": "googledrive",
+    "target": "icons/googledrive.svg"
+  },
+  {
+    "name": "googlegemini",
+    "target": "icons/googlegemini.svg"
+  },
+  {
+    "name": "grafana",
+    "target": "icons/grafana.svg"
+  },
+  {
+    "name": "graphql",
+    "target": "icons/graphql.svg"
+  },
+  {
+    "name": "gravatar",
+    "target": "icons/gravatar.svg"
+  },
+  {
+    "name": "gsap",
+    "target": "icons/gsap.svg"
+  },
+  {
+    "name": "handlebarsjs",
+    "target": "icons/handlebarsjs.svg"
+  },
+  {
+    "name": "happycow",
+    "target": "icons/happycow.svg"
+  },
+  {
+    "name": "heroui",
+    "target": "icons/heroui.svg"
+  },
+  {
+    "name": "html",
+    "target": "icons/html.svg"
+  },
+  {
+    "name": "htmx",
+    "target": "icons/htmx.svg"
+  },
+  {
+    "name": "huggingface",
+    "target": "icons/huggingface.svg"
+  },
+  {
+    "name": "hugo",
+    "target": "icons/hugo.svg"
+  },
+  {
+    "name": "i18next",
+    "target": "icons/i18next.svg"
+  },
+  {
+    "name": "iconjar",
+    "target": "icons/iconjar.svg"
+  },
+  {
+    "name": "immersivetranslate",
+    "target": "icons/immersivetranslate.svg"
+  },
+  {
+    "name": "instagram",
+    "target": "icons/instagram.svg"
+  },
+  {
+    "name": "intellijidea",
+    "target": "icons/intellijidea.svg"
+  },
+  {
+    "name": "itunes",
+    "target": "icons/itunes.svg"
+  },
+  {
+    "name": "javascript",
+    "target": "icons/javascript.svg"
+  },
+  {
+    "name": "jenkins",
+    "target": "icons/jenkins.svg"
+  },
+  {
+    "name": "jinja",
+    "target": "icons/jinja.svg"
+  },
+  {
+    "name": "jitsi",
+    "target": "icons/jitsi.svg"
+  },
+  {
+    "name": "jquery",
+    "target": "icons/jquery.svg"
+  },
+  {
+    "name": "json",
+    "target": "icons/json.svg"
+  },
+  {
+    "name": "kalilinux",
+    "target": "icons/kalilinux.svg"
+  },
+  {
+    "name": "kotlin",
+    "target": "icons/kotlin.svg"
+  },
+  {
+    "name": "kubernetes",
+    "target": "icons/kubernetes.svg"
+  },
+  {
+    "name": "laravel",
+    "target": "icons/laravel.svg"
+  },
+  {
+    "name": "less",
+    "target": "icons/less.svg"
+  },
+  {
+    "name": "line",
+    "target": "icons/line.svg"
+  },
+  {
+    "name": "linear",
+    "target": "icons/linear.svg"
+  },
+  {
+    "name": "linux",
+    "target": "icons/linux.svg"
+  },
+  {
+    "name": "lit",
+    "target": "icons/lit.svg"
+  },
+  {
+    "name": "livewire",
+    "target": "icons/livewire.svg"
+  },
+  {
+    "name": "mariadb",
+    "target": "icons/mariadb.svg"
+  },
+  {
+    "name": "mariadbfoundation",
+    "target": "icons/mariadbfoundation.svg"
+  },
+  {
+    "name": "markdown",
+    "target": "icons/markdown.svg"
+  },
+  {
+    "name": "marko",
+    "target": "icons/marko.svg"
+  },
+  {
+    "name": "mcp",
+    "target": "icons/mcp.svg"
+  },
+  {
+    "name": "meilisearch",
+    "target": "icons/meilisearch.svg"
+  },
+  {
+    "name": "mistralai",
+    "target": "icons/mistralai.svg"
+  },
+  {
+    "name": "mongodb",
+    "target": "icons/mongodb.svg"
+  },
+  {
+    "name": "mui",
+    "target": "icons/mui.svg"
+  },
+  {
+    "name": "mysql",
+    "target": "icons/mysql.svg"
+  },
+  {
+    "name": "n8n",
+    "target": "icons/n8n.svg"
+  },
+  {
+    "name": "neovim",
+    "target": "icons/neovim.svg"
+  },
+  {
+    "name": "nestjs",
+    "target": "icons/nestjs.svg"
+  },
+  {
+    "name": "netlify",
+    "target": "icons/netlify.svg"
+  },
+  {
+    "name": "nextjs",
+    "target": "icons/nextjs.svg"
+  },
+  {
+    "name": "nginx",
+    "target": "icons/nginx.svg"
+  },
+  {
+    "name": "nodejs",
+    "target": "icons/nodejs.svg"
+  },
+  {
+    "name": "notion",
+    "target": "icons/notion.svg"
+  },
+  {
+    "name": "npm",
+    "target": "icons/npm.svg"
+  },
+  {
+    "name": "nuxt",
+    "target": "icons/nuxt.svg"
+  },
+  {
+    "name": "nvm",
+    "target": "icons/nvm.svg"
+  },
+  {
+    "name": "opensourceinitiative",
+    "target": "icons/opensourceinitiative.svg"
+  },
+  {
+    "name": "peerlist",
+    "target": "icons/peerlist.svg"
+  },
+  {
+    "name": "php",
+    "target": "icons/php.svg"
+  },
+  {
+    "name": "phpstorm",
+    "target": "icons/phpstorm.svg"
+  },
+  {
+    "name": "pm2",
+    "target": "icons/pm2.svg"
+  },
+  {
+    "name": "postcss",
+    "target": "icons/postcss.svg"
+  },
+  {
+    "name": "postgresql",
+    "target": "icons/postgresql.svg"
+  },
+  {
+    "name": "postman",
+    "target": "icons/postman.svg"
+  },
+  {
+    "name": "preact",
+    "target": "icons/preact.svg"
+  },
+  {
+    "name": "primereact",
+    "target": "icons/primereact.svg"
+  },
+  {
+    "name": "primevue",
+    "target": "icons/primevue.svg"
+  },
+  {
+    "name": "prisma",
+    "target": "icons/prisma.svg"
+  },
+  {
+    "name": "prometheus",
+    "target": "icons/prometheus.svg"
+  },
+  {
+    "name": "pug",
+    "target": "icons/pug.svg"
+  },
+  {
+    "name": "pwa",
+    "target": "icons/pwa.svg"
+  },
+  {
+    "name": "python",
+    "target": "icons/python.svg"
+  },
+  {
+    "name": "quasar",
+    "target": "icons/quasar.svg"
+  },
+  {
+    "name": "qwik",
+    "target": "icons/qwik.svg"
+  },
+  {
+    "name": "railway",
+    "target": "icons/railway.svg"
+  },
+  {
+    "name": "rapid",
+    "target": "icons/rapid.svg"
+  },
+  {
+    "name": "react",
+    "target": "icons/react.svg"
+  },
+  {
+    "name": "reactos",
+    "target": "icons/reactos.svg"
+  },
+  {
+    "name": "reactquery",
+    "target": "icons/reactquery.svg"
+  },
+  {
+    "name": "reactrouter",
+    "target": "icons/reactrouter.svg"
+  },
+  {
+    "name": "redis",
+    "target": "icons/redis.svg"
+  },
+  {
+    "name": "redwoodjs",
+    "target": "icons/redwoodjs.svg"
+  },
+  {
+    "name": "remix",
+    "target": "icons/remix.svg"
+  },
+  {
+    "name": "republicofgamers",
+    "target": "icons/republicofgamers.svg"
+  },
+  {
+    "name": "runrundotit",
+    "target": "icons/runrundotit.svg"
+  },
+  {
+    "name": "rust",
+    "target": "icons/rust.svg"
+  },
+  {
+    "name": "samsung",
+    "target": "icons/samsung.svg"
+  },
+  {
+    "name": "sap",
+    "target": "icons/sap.svg"
+  },
+  {
+    "name": "sass",
+    "target": "icons/sass.svg"
+  },
+  {
+    "name": "shadcnui",
+    "target": "icons/shadcnui.svg"
+  },
+  {
+    "name": "sharp",
+    "target": "icons/sharp.svg"
+  },
+  {
+    "name": "solid",
+    "target": "icons/solid.svg"
+  },
+  {
+    "name": "sonar",
+    "target": "icons/sonar.svg"
+  },
+  {
+    "name": "soundcloud",
+    "target": "icons/soundcloud.svg"
+  },
+  {
+    "name": "spring",
+    "target": "icons/spring.svg"
+  },
+  {
+    "name": "sqlite",
+    "target": "icons/sqlite.svg"
+  },
+  {
+    "name": "stencil",
+    "target": "icons/stencil.svg"
+  },
+  {
+    "name": "styledcomponents",
+    "target": "icons/styledcomponents.svg"
+  },
+  {
+    "name": "sublimetext",
+    "target": "icons/sublimetext.svg"
+  },
+  {
+    "name": "supabase",
+    "target": "icons/supabase.svg"
+  },
+  {
+    "name": "svelte",
+    "target": "icons/svelte.svg"
+  },
+  {
+    "name": "swift",
+    "target": "icons/swift.svg"
+  },
+  {
+    "name": "tailwindcss",
+    "target": "icons/tailwindcss.svg"
+  },
+  {
+    "name": "tanstack",
+    "target": "icons/tanstack.svg"
+  },
+  {
+    "name": "telegram",
+    "target": "icons/telegram.svg"
+  },
+  {
+    "name": "termius",
+    "target": "icons/termius.svg"
+  },
+  {
+    "name": "terraform",
+    "target": "icons/terraform.svg"
+  },
+  {
+    "name": "threedotjs",
+    "target": "icons/threedotjs.svg"
+  },
+  {
+    "name": "tor",
+    "target": "icons/tor.svg"
+  },
+  {
+    "name": "travisci",
+    "target": "icons/travisci.svg"
+  },
+  {
+    "name": "tsnode",
+    "target": "icons/tsnode.svg"
+  },
+  {
+    "name": "typescript",
+    "target": "icons/typescript.svg"
+  },
+  {
+    "name": "ubuntu",
+    "target": "icons/ubuntu.svg"
+  },
+  {
+    "name": "unsplash",
+    "target": "icons/unsplash.svg"
+  },
+  {
+    "name": "vercel",
+    "target": "icons/vercel.svg"
+  },
+  {
+    "name": "vim",
+    "target": "icons/vim.svg"
+  },
+  {
+    "name": "vite",
+    "target": "icons/vite.svg"
+  },
+  {
+    "name": "vitepress",
+    "target": "icons/vitepress.svg"
+  },
+  {
+    "name": "vitess",
+    "target": "icons/vitess.svg"
+  },
+  {
+    "name": "vuedotjs",
+    "target": "icons/vuedotjs.svg"
+  },
+  {
+    "name": "vuetify",
+    "target": "icons/vuetify.svg"
+  },
+  {
+    "name": "vueuse",
+    "target": "icons/vueuse.svg"
+  },
+  {
+    "name": "warp",
+    "target": "icons/warp.svg"
+  },
+  {
+    "name": "webassembly",
+    "target": "icons/webassembly.svg"
+  },
+  {
+    "name": "wondersharefilmora",
+    "target": "icons/wondersharefilmora.svg"
+  },
+  {
+    "name": "xampp",
+    "target": "icons/xampp.svg"
+  },
+  {
+    "name": "xml",
+    "target": "icons/xml.svg"
+  },
+  {
+    "name": "yaml",
+    "target": "icons/yaml.svg"
+  },
+  {
+    "name": "youtube",
+    "target": "icons/youtube.svg"
+  },
+  {
+    "name": "youtubemusic",
+    "target": "icons/youtubemusic.svg"
+  },
+  {
+    "name": "youtubeshorts",
+    "target": "icons/youtubeshorts.svg"
+  }
+]
