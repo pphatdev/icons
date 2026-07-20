@@ -2,9 +2,21 @@ name: Auto Update Category JSON
 
 on:
   push:
+    branches:
+      - master
+      - main
     paths:
       - '**/*.json'
       - '!*.json' # Exclude root json files from triggering the workflow to prevent infinite loops
+  pull_request:
+    branches:
+      - master
+      - main
+    paths:
+      - '**/*.json'
+      - '!*.json'
+  release:
+    types: [published, created]
   workflow_dispatch:
 
 jobs:
