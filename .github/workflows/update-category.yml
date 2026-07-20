@@ -21,15 +21,18 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
+        working-directory: .github/scripts
         run: npm install
 
       - name: Build Script
+        working-directory: .github/scripts
         run: npm run build
 
       - name: Execute the script
-        run: node dist/update-category.mjs
+        run: node .github/scripts/dist/update-category.mjs
           
       - name: Commit and Push changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: auto update category json files"
+          file_pattern: '*.json'
