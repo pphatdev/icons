@@ -5,18 +5,18 @@ First off, thank you for considering contributing to the `@pphatdev/registry` ic
 ## How to Contribute
 
 ### 1. Adding a New Icon
-We welcome additions of new brand icons. To add an icon, please follow these steps:
+We welcome additions of new brand or regular icons. To add an icon, please follow these steps:
 
-1. **Optimize your SVG:** Ensure your SVG is properly formatted, minified, and does not contain unnecessary tags or metadata.
-2. **Add to the `brands/` folder:** Place your optimized `.svg` file into the `brands/` directory. Ensure the filename is lowercase and uses hyphens for spaces (e.g., `my-brand.svg`).
-3. **Update the Registry (`index.json`):** Add a new entry to the `index.json` file in the root directory following this format:
-   ```json
-   {
-       "name": "icon-name",
-       "target": "brands/icon-name.svg"
-   }
+1. **Add your Icon JSON:** Place your newly created or updated `.json` file into the appropriate category folder (`brands/` or `regular/`).
+2. **Do Not Update Root JSONs Manually:** You do **not** need to manually update `brands.json` or `regular.json`. We have a GitHub Actions workflow that automatically scans the directories and rebuilds these root index files for you whenever a PR is created or merged!
+3. **Test your changes locally (Optional):** If you want to preview the compiled registry locally before submitting your PR, you can run the build script:
+   ```bash
+   cd .github/scripts
+   npm install
+   npm run build
+   cd ../..
+   node .github/scripts/dist/update-category.mjs
    ```
-4. **Test your changes:** Verify that the JSON format in `index.json` is still valid and that the path to your new SVG is correct.
 
 ### 2. Submitting a Pull Request
 1. Fork the repository and create your branch from `main`.
