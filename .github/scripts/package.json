@@ -1,11 +1,12 @@
 {
-    "name": "@pphatdev/icons",
+    "name": "@pphatdev/icons-scripts",
     "version": "1.0.0",
-    "description": "KFE Icons repository",
+    "private": true,
+    "description": "KFE Icons repository scripts",
     "main": "index.js",
     "scripts": {
-        "build": "tsup src/update-category.ts --format esm --clean",
-        "update-category": "tsx src/update-category.ts"
+        "build": "tsup update-category.ts --format esm --clean",
+        "update-category": "tsx update-category.ts"
     },
     "keywords": [],
     "author": "",

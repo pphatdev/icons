@@ -46,11 +46,7 @@ pphat add facebook -f svg
 ## Adding New Icons
 
 To add a new icon to the registry:
-1. Add the optimized SVG file to the `brands/` directory.
-2. Add a new entry to `index.json` with the format:
-    ```json
-    {
-        "name": "icon-name",
-        "target": "brands/icon-name.svg"
-    }
-    ```
+1. Add your new icon `.json` file to the appropriate category directory (e.g., `brands/` or `regular/`).
+2. That's it! You do not need to manually update `brands.json` or `regular.json`. A GitHub Actions workflow automatically compiles these index files when a Pull Request is opened or code is merged.
+
+For more detailed information, please see our [CONTRIBUTING.md](CONTRIBUTING.md).
