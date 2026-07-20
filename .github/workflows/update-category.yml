@@ -5,6 +5,7 @@ on:
     paths:
       - '**/*.json'
       - '!*.json' # Exclude root json files from triggering the workflow to prevent infinite loops
+  workflow_dispatch:
 
 jobs:
   update-json:
