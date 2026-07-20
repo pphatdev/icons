@@ -1,0 +1,34 @@
+name: Auto Update Category JSON
+
+on:
+  push:
+    paths:
+      - '**/*.json'
+      - '!*.json' # Exclude root json files from triggering the workflow to prevent infinite loops
+
+jobs:
+  update-json:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to push changes
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Script
+        run: npm run build
+
+      - name: Execute the script
+        run: node dist/update-category.mjs
+          
+      - name: Commit and Push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: auto update category json files"
