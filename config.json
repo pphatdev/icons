@@ -1,0 +1,27 @@
+{
+    "name": "Default configuration",
+    "icons": {
+        "svg": {
+            "dir": "assets/icons",
+            "use": false
+        },
+        "nextjs": {
+            "dir": "components/icons",
+            "use": false
+        },
+        "nuxtjs": {
+            "dir": "components/icons",
+            "use": false
+        }
+    },
+    "components": {
+        "nextjs": {
+            "dir": "components/ui",
+            "use": false
+        },
+        "nuxtjs": {
+            "dir": "components/ui",
+            "use": false
+        }
+    }
+}

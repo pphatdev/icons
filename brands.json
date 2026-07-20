@@ -1,0 +1,972 @@
+[
+  {
+    "name": "7zip",
+    "target": "brands/7zip.json",
+    "type": "brands"
+  },
+  {
+    "name": "algolia",
+    "target": "brands/algolia.json",
+    "type": "brands"
+  },
+  {
+    "name": "angular",
+    "target": "brands/angular.json",
+    "type": "brands"
+  },
+  {
+    "name": "ansible",
+    "target": "brands/ansible.json",
+    "type": "brands"
+  },
+  {
+    "name": "antdesign",
+    "target": "brands/antdesign.json",
+    "type": "brands"
+  },
+  {
+    "name": "apachekafka",
+    "target": "brands/apachekafka.json",
+    "type": "brands"
+  },
+  {
+    "name": "apple",
+    "target": "brands/apple.json",
+    "type": "brands"
+  },
+  {
+    "name": "archlinux",
+    "target": "brands/archlinux.json",
+    "type": "brands"
+  },
+  {
+    "name": "argo",
+    "target": "brands/argo.json",
+    "type": "brands"
+  },
+  {
+    "name": "awesomelists",
+    "target": "brands/awesomelists.json",
+    "type": "brands"
+  },
+  {
+    "name": "bitcoincash",
+    "target": "brands/bitcoincash.json",
+    "type": "brands"
+  },
+  {
+    "name": "bootstrap",
+    "target": "brands/bootstrap.json",
+    "type": "brands"
+  },
+  {
+    "name": "brave",
+    "target": "brands/brave.json",
+    "type": "brands"
+  },
+  {
+    "name": "bun",
+    "target": "brands/bun.json",
+    "type": "brands"
+  },
+  {
+    "name": "canonical",
+    "target": "brands/canonical.json",
+    "type": "brands"
+  },
+  {
+    "name": "chartdotjs",
+    "target": "brands/chartdotjs.json",
+    "type": "brands"
+  },
+  {
+    "name": "claude",
+    "target": "brands/claude.json",
+    "type": "brands"
+  },
+  {
+    "name": "cline",
+    "target": "brands/cline.json",
+    "type": "brands"
+  },
+  {
+    "name": "cloudflare",
+    "target": "brands/cloudflare.json",
+    "type": "brands"
+  },
+  {
+    "name": "cloudways",
+    "target": "brands/cloudways.json",
+    "type": "brands"
+  },
+  {
+    "name": "codeberg",
+    "target": "brands/codeberg.json",
+    "type": "brands"
+  },
+  {
+    "name": "codecov",
+    "target": "brands/codecov.json",
+    "type": "brands"
+  },
+  {
+    "name": "codeproject",
+    "target": "brands/codeproject.json",
+    "type": "brands"
+  },
+  {
+    "name": "coderabbit",
+    "target": "brands/coderabbit.json",
+    "type": "brands"
+  },
+  {
+    "name": "composer",
+    "target": "brands/composer.json",
+    "type": "brands"
+  },
+  {
+    "name": "cplusplus",
+    "target": "brands/cplusplus.json",
+    "type": "brands"
+  },
+  {
+    "name": "createreactapp",
+    "target": "brands/createreactapp.json",
+    "type": "brands"
+  },
+  {
+    "name": "csharp",
+    "target": "brands/csharp.json",
+    "type": "brands"
+  },
+  {
+    "name": "css",
+    "target": "brands/css.json",
+    "type": "brands"
+  },
+  {
+    "name": "dart",
+    "target": "brands/dart.json",
+    "type": "brands"
+  },
+  {
+    "name": "datadog",
+    "target": "brands/datadog.json",
+    "type": "brands"
+  },
+  {
+    "name": "deno",
+    "target": "brands/deno.json",
+    "type": "brands"
+  },
+  {
+    "name": "denodeploy",
+    "target": "brands/denodeploy.json",
+    "type": "brands"
+  },
+  {
+    "name": "devdotto",
+    "target": "brands/devdotto.json",
+    "type": "brands"
+  },
+  {
+    "name": "digitalocean",
+    "target": "brands/digitalocean.json",
+    "type": "brands"
+  },
+  {
+    "name": "django",
+    "target": "brands/django.json",
+    "type": "brands"
+  },
+  {
+    "name": "docker",
+    "target": "brands/docker.json",
+    "type": "brands"
+  },
+  {
+    "name": "dotnet",
+    "target": "brands/dotnet.json",
+    "type": "brands"
+  },
+  {
+    "name": "drizzle",
+    "target": "brands/drizzle.json",
+    "type": "brands"
+  },
+  {
+    "name": "editorconfig",
+    "target": "brands/editorconfig.json",
+    "type": "brands"
+  },
+  {
+    "name": "ejs",
+    "target": "brands/ejs.json",
+    "type": "brands"
+  },
+  {
+    "name": "emberdotjs",
+    "target": "brands/emberdotjs.json",
+    "type": "brands"
+  },
+  {
+    "name": "ethereum",
+    "target": "brands/ethereum.json",
+    "type": "brands"
+  },
+  {
+    "name": "expo",
+    "target": "brands/expo.json",
+    "type": "brands"
+  },
+  {
+    "name": "express",
+    "target": "brands/express.json",
+    "type": "brands"
+  },
+  {
+    "name": "facebook",
+    "target": "brands/facebook.json",
+    "type": "brands"
+  },
+  {
+    "name": "fastapi",
+    "target": "brands/fastapi.json",
+    "type": "brands"
+  },
+  {
+    "name": "fastify",
+    "target": "brands/fastify.json",
+    "type": "brands"
+  },
+  {
+    "name": "flutter",
+    "target": "brands/flutter.json",
+    "type": "brands"
+  },
+  {
+    "name": "flydotio",
+    "target": "brands/flydotio.json",
+    "type": "brands"
+  },
+  {
+    "name": "fontawesome",
+    "target": "brands/fontawesome.json",
+    "type": "brands"
+  },
+  {
+    "name": "gatsby",
+    "target": "brands/gatsby.json",
+    "type": "brands"
+  },
+  {
+    "name": "git",
+    "target": "brands/git.json",
+    "type": "brands"
+  },
+  {
+    "name": "gitbook",
+    "target": "brands/gitbook.json",
+    "type": "brands"
+  },
+  {
+    "name": "gitcode",
+    "target": "brands/gitcode.json",
+    "type": "brands"
+  },
+  {
+    "name": "github",
+    "target": "brands/github.json",
+    "type": "brands"
+  },
+  {
+    "name": "githubactions",
+    "target": "brands/githubactions.json",
+    "type": "brands"
+  },
+  {
+    "name": "githubcopilot",
+    "target": "brands/githubcopilot.json",
+    "type": "brands"
+  },
+  {
+    "name": "gitignoredotio",
+    "target": "brands/gitignoredotio.json",
+    "type": "brands"
+  },
+  {
+    "name": "gitkraken",
+    "target": "brands/gitkraken.json",
+    "type": "brands"
+  },
+  {
+    "name": "gitlab",
+    "target": "brands/gitlab.json",
+    "type": "brands"
+  },
+  {
+    "name": "gitpod",
+    "target": "brands/gitpod.json",
+    "type": "brands"
+  },
+  {
+    "name": "go",
+    "target": "brands/go.json",
+    "type": "brands"
+  },
+  {
+    "name": "googledrive",
+    "target": "brands/googledrive.json",
+    "type": "brands"
+  },
+  {
+    "name": "googlegemini",
+    "target": "brands/googlegemini.json",
+    "type": "brands"
+  },
+  {
+    "name": "grafana",
+    "target": "brands/grafana.json",
+    "type": "brands"
+  },
+  {
+    "name": "graphql",
+    "target": "brands/graphql.json",
+    "type": "brands"
+  },
+  {
+    "name": "gravatar",
+    "target": "brands/gravatar.json",
+    "type": "brands"
+  },
+  {
+    "name": "gsap",
+    "target": "brands/gsap.json",
+    "type": "brands"
+  },
+  {
+    "name": "handlebarsjs",
+    "target": "brands/handlebarsjs.json",
+    "type": "brands"
+  },
+  {
+    "name": "happycow",
+    "target": "brands/happycow.json",
+    "type": "brands"
+  },
+  {
+    "name": "heroui",
+    "target": "brands/heroui.json",
+    "type": "brands"
+  },
+  {
+    "name": "html",
+    "target": "brands/html.json",
+    "type": "brands"
+  },
+  {
+    "name": "htmx",
+    "target": "brands/htmx.json",
+    "type": "brands"
+  },
+  {
+    "name": "huggingface",
+    "target": "brands/huggingface.json",
+    "type": "brands"
+  },
+  {
+    "name": "hugo",
+    "target": "brands/hugo.json",
+    "type": "brands"
+  },
+  {
+    "name": "i18next",
+    "target": "brands/i18next.json",
+    "type": "brands"
+  },
+  {
+    "name": "iconjar",
+    "target": "brands/iconjar.json",
+    "type": "brands"
+  },
+  {
+    "name": "immersivetranslate",
+    "target": "brands/immersivetranslate.json",
+    "type": "brands"
+  },
+  {
+    "name": "instagram",
+    "target": "brands/instagram.json",
+    "type": "brands"
+  },
+  {
+    "name": "intellijidea",
+    "target": "brands/intellijidea.json",
+    "type": "brands"
+  },
+  {
+    "name": "itunes",
+    "target": "brands/itunes.json",
+    "type": "brands"
+  },
+  {
+    "name": "javascript",
+    "target": "brands/javascript.json",
+    "type": "brands"
+  },
+  {
+    "name": "jenkins",
+    "target": "brands/jenkins.json",
+    "type": "brands"
+  },
+  {
+    "name": "jinja",
+    "target": "brands/jinja.json",
+    "type": "brands"
+  },
+  {
+    "name": "jitsi",
+    "target": "brands/jitsi.json",
+    "type": "brands"
+  },
+  {
+    "name": "jquery",
+    "target": "brands/jquery.json",
+    "type": "brands"
+  },
+  {
+    "name": "json",
+    "target": "brands/json.json",
+    "type": "brands"
+  },
+  {
+    "name": "kalilinux",
+    "target": "brands/kalilinux.json",
+    "type": "brands"
+  },
+  {
+    "name": "kotlin",
+    "target": "brands/kotlin.json",
+    "type": "brands"
+  },
+  {
+    "name": "kubernetes",
+    "target": "brands/kubernetes.json",
+    "type": "brands"
+  },
+  {
+    "name": "laravel",
+    "target": "brands/laravel.json",
+    "type": "brands"
+  },
+  {
+    "name": "less",
+    "target": "brands/less.json",
+    "type": "brands"
+  },
+  {
+    "name": "line",
+    "target": "brands/line.json",
+    "type": "brands"
+  },
+  {
+    "name": "linear",
+    "target": "brands/linear.json",
+    "type": "brands"
+  },
+  {
+    "name": "linux",
+    "target": "brands/linux.json",
+    "type": "brands"
+  },
+  {
+    "name": "lit",
+    "target": "brands/lit.json",
+    "type": "brands"
+  },
+  {
+    "name": "livewire",
+    "target": "brands/livewire.json",
+    "type": "brands"
+  },
+  {
+    "name": "mariadb",
+    "target": "brands/mariadb.json",
+    "type": "brands"
+  },
+  {
+    "name": "mariadbfoundation",
+    "target": "brands/mariadbfoundation.json",
+    "type": "brands"
+  },
+  {
+    "name": "markdown",
+    "target": "brands/markdown.json",
+    "type": "brands"
+  },
+  {
+    "name": "marko",
+    "target": "brands/marko.json",
+    "type": "brands"
+  },
+  {
+    "name": "mcp",
+    "target": "brands/mcp.json",
+    "type": "brands"
+  },
+  {
+    "name": "meilisearch",
+    "target": "brands/meilisearch.json",
+    "type": "brands"
+  },
+  {
+    "name": "mistralai",
+    "target": "brands/mistralai.json",
+    "type": "brands"
+  },
+  {
+    "name": "mongodb",
+    "target": "brands/mongodb.json",
+    "type": "brands"
+  },
+  {
+    "name": "mui",
+    "target": "brands/mui.json",
+    "type": "brands"
+  },
+  {
+    "name": "mysql",
+    "target": "brands/mysql.json",
+    "type": "brands"
+  },
+  {
+    "name": "n8n",
+    "target": "brands/n8n.json",
+    "type": "brands"
+  },
+  {
+    "name": "neovim",
+    "target": "brands/neovim.json",
+    "type": "brands"
+  },
+  {
+    "name": "nestjs",
+    "target": "brands/nestjs.json",
+    "type": "brands"
+  },
+  {
+    "name": "netlify",
+    "target": "brands/netlify.json",
+    "type": "brands"
+  },
+  {
+    "name": "nextjs",
+    "target": "brands/nextjs.json",
+    "type": "brands"
+  },
+  {
+    "name": "nginx",
+    "target": "brands/nginx.json",
+    "type": "brands"
+  },
+  {
+    "name": "nodejs",
+    "target": "brands/nodejs.json",
+    "type": "brands"
+  },
+  {
+    "name": "notion",
+    "target": "brands/notion.json",
+    "type": "brands"
+  },
+  {
+    "name": "npm",
+    "target": "brands/npm.json",
+    "type": "brands"
+  },
+  {
+    "name": "nuxt",
+    "target": "brands/nuxt.json",
+    "type": "brands"
+  },
+  {
+    "name": "nvm",
+    "target": "brands/nvm.json",
+    "type": "brands"
+  },
+  {
+    "name": "opensourceinitiative",
+    "target": "brands/opensourceinitiative.json",
+    "type": "brands"
+  },
+  {
+    "name": "peerlist",
+    "target": "brands/peerlist.json",
+    "type": "brands"
+  },
+  {
+    "name": "php",
+    "target": "brands/php.json",
+    "type": "brands"
+  },
+  {
+    "name": "phpstorm",
+    "target": "brands/phpstorm.json",
+    "type": "brands"
+  },
+  {
+    "name": "pm2",
+    "target": "brands/pm2.json",
+    "type": "brands"
+  },
+  {
+    "name": "postcss",
+    "target": "brands/postcss.json",
+    "type": "brands"
+  },
+  {
+    "name": "postgresql",
+    "target": "brands/postgresql.json",
+    "type": "brands"
+  },
+  {
+    "name": "postman",
+    "target": "brands/postman.json",
+    "type": "brands"
+  },
+  {
+    "name": "preact",
+    "target": "brands/preact.json",
+    "type": "brands"
+  },
+  {
+    "name": "primereact",
+    "target": "brands/primereact.json",
+    "type": "brands"
+  },
+  {
+    "name": "primevue",
+    "target": "brands/primevue.json",
+    "type": "brands"
+  },
+  {
+    "name": "prisma",
+    "target": "brands/prisma.json",
+    "type": "brands"
+  },
+  {
+    "name": "prometheus",
+    "target": "brands/prometheus.json",
+    "type": "brands"
+  },
+  {
+    "name": "pug",
+    "target": "brands/pug.json",
+    "type": "brands"
+  },
+  {
+    "name": "pwa",
+    "target": "brands/pwa.json",
+    "type": "brands"
+  },
+  {
+    "name": "python",
+    "target": "brands/python.json",
+    "type": "brands"
+  },
+  {
+    "name": "quasar",
+    "target": "brands/quasar.json",
+    "type": "brands"
+  },
+  {
+    "name": "qwik",
+    "target": "brands/qwik.json",
+    "type": "brands"
+  },
+  {
+    "name": "railway",
+    "target": "brands/railway.json",
+    "type": "brands"
+  },
+  {
+    "name": "rapid",
+    "target": "brands/rapid.json",
+    "type": "brands"
+  },
+  {
+    "name": "react",
+    "target": "brands/react.json",
+    "type": "brands"
+  },
+  {
+    "name": "reactos",
+    "target": "brands/reactos.json",
+    "type": "brands"
+  },
+  {
+    "name": "reactquery",
+    "target": "brands/reactquery.json",
+    "type": "brands"
+  },
+  {
+    "name": "reactrouter",
+    "target": "brands/reactrouter.json",
+    "type": "brands"
+  },
+  {
+    "name": "redis",
+    "target": "brands/redis.json",
+    "type": "brands"
+  },
+  {
+    "name": "redwoodjs",
+    "target": "brands/redwoodjs.json",
+    "type": "brands"
+  },
+  {
+    "name": "remix",
+    "target": "brands/remix.json",
+    "type": "brands"
+  },
+  {
+    "name": "republicofgamers",
+    "target": "brands/republicofgamers.json",
+    "type": "brands"
+  },
+  {
+    "name": "runrundotit",
+    "target": "brands/runrundotit.json",
+    "type": "brands"
+  },
+  {
+    "name": "rust",
+    "target": "brands/rust.json",
+    "type": "brands"
+  },
+  {
+    "name": "samsung",
+    "target": "brands/samsung.json",
+    "type": "brands"
+  },
+  {
+    "name": "sap",
+    "target": "brands/sap.json",
+    "type": "brands"
+  },
+  {
+    "name": "sass",
+    "target": "brands/sass.json",
+    "type": "brands"
+  },
+  {
+    "name": "shadcnui",
+    "target": "brands/shadcnui.json",
+    "type": "brands"
+  },
+  {
+    "name": "sharp",
+    "target": "brands/sharp.json",
+    "type": "brands"
+  },
+  {
+    "name": "solid",
+    "target": "brands/solid.json",
+    "type": "brands"
+  },
+  {
+    "name": "sonar",
+    "target": "brands/sonar.json",
+    "type": "brands"
+  },
+  {
+    "name": "soundcloud",
+    "target": "brands/soundcloud.json",
+    "type": "brands"
+  },
+  {
+    "name": "spring",
+    "target": "brands/spring.json",
+    "type": "brands"
+  },
+  {
+    "name": "sqlite",
+    "target": "brands/sqlite.json",
+    "type": "brands"
+  },
+  {
+    "name": "stencil",
+    "target": "brands/stencil.json",
+    "type": "brands"
+  },
+  {
+    "name": "styledcomponents",
+    "target": "brands/styledcomponents.json",
+    "type": "brands"
+  },
+  {
+    "name": "sublimetext",
+    "target": "brands/sublimetext.json",
+    "type": "brands"
+  },
+  {
+    "name": "supabase",
+    "target": "brands/supabase.json",
+    "type": "brands"
+  },
+  {
+    "name": "svelte",
+    "target": "brands/svelte.json",
+    "type": "brands"
+  },
+  {
+    "name": "swift",
+    "target": "brands/swift.json",
+    "type": "brands"
+  },
+  {
+    "name": "tailwindcss",
+    "target": "brands/tailwindcss.json",
+    "type": "brands"
+  },
+  {
+    "name": "tanstack",
+    "target": "brands/tanstack.json",
+    "type": "brands"
+  },
+  {
+    "name": "telegram",
+    "target": "brands/telegram.json",
+    "type": "brands"
+  },
+  {
+    "name": "termius",
+    "target": "brands/termius.json",
+    "type": "brands"
+  },
+  {
+    "name": "terraform",
+    "target": "brands/terraform.json",
+    "type": "brands"
+  },
+  {
+    "name": "threedotjs",
+    "target": "brands/threedotjs.json",
+    "type": "brands"
+  },
+  {
+    "name": "tor",
+    "target": "brands/tor.json",
+    "type": "brands"
+  },
+  {
+    "name": "travisci",
+    "target": "brands/travisci.json",
+    "type": "brands"
+  },
+  {
+    "name": "tsnode",
+    "target": "brands/tsnode.json",
+    "type": "brands"
+  },
+  {
+    "name": "typescript",
+    "target": "brands/typescript.json",
+    "type": "brands"
+  },
+  {
+    "name": "ubuntu",
+    "target": "brands/ubuntu.json",
+    "type": "brands"
+  },
+  {
+    "name": "unsplash",
+    "target": "brands/unsplash.json",
+    "type": "brands"
+  },
+  {
+    "name": "vercel",
+    "target": "brands/vercel.json",
+    "type": "brands"
+  },
+  {
+    "name": "vim",
+    "target": "brands/vim.json",
+    "type": "brands"
+  },
+  {
+    "name": "vite",
+    "target": "brands/vite.json",
+    "type": "brands"
+  },
+  {
+    "name": "vitepress",
+    "target": "brands/vitepress.json",
+    "type": "brands"
+  },
+  {
+    "name": "vitess",
+    "target": "brands/vitess.json",
+    "type": "brands"
+  },
+  {
+    "name": "vuedotjs",
+    "target": "brands/vuedotjs.json",
+    "type": "brands"
+  },
+  {
+    "name": "vuetify",
+    "target": "brands/vuetify.json",
+    "type": "brands"
+  },
+  {
+    "name": "vueuse",
+    "target": "brands/vueuse.json",
+    "type": "brands"
+  },
+  {
+    "name": "warp",
+    "target": "brands/warp.json",
+    "type": "brands"
+  },
+  {
+    "name": "webassembly",
+    "target": "brands/webassembly.json",
+    "type": "brands"
+  },
+  {
+    "name": "wondersharefilmora",
+    "target": "brands/wondersharefilmora.json",
+    "type": "brands"
+  },
+  {
+    "name": "xampp",
+    "target": "brands/xampp.json",
+    "type": "brands"
+  },
+  {
+    "name": "xml",
+    "target": "brands/xml.json",
+    "type": "brands"
+  },
+  {
+    "name": "yaml",
+    "target": "brands/yaml.json",
+    "type": "brands"
+  },
+  {
+    "name": "youtube",
+    "target": "brands/youtube.json",
+    "type": "brands"
+  },
+  {
+    "name": "youtubemusic",
+    "target": "brands/youtubemusic.json",
+    "type": "brands"
+  },
+  {
+    "name": "youtubeshorts",
+    "target": "brands/youtubeshorts.json",
+    "type": "brands"
+  }
+]
