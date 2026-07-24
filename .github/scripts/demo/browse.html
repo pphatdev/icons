@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Browse · KFE Icons Studio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-25..0" />
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          'surface-container': '#1e1e1e', 'outline-variant': '#2a2a2a',
+          'surface-container-lowest': '#0a0a0a', 'surface-bright': '#2c2c2c',
+          'primary': '#0d99ff', 'surface-variant': '#252525',
+          'surface-dim': '#121212', 'surface-container-high': '#262626',
+          'surface-container-highest': '#333333', 'on-primary': '#ffffff',
+          'on-surface-variant': '#a1a1a1', 'on-surface': '#e1e1e1',
+          'background': '#0a0a0a', 'surface-container-low': '#161616',
+          'outline': '#444444', 'surface': '#0a0a0a', 'error': '#ffb4ab',
+        },
+        borderRadius: { DEFAULT: '0.125rem', lg: '0.375rem', xl: '0.5rem', full: '9999px' },
+        fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'ui-monospace', 'monospace'] },
+      }
+    }
+  };
+</script>
+<style>
+  body { background: #0a0a0a; color: #e1e1e1; height: 100vh; overflow: hidden; font-size: 12px; font-family: 'Inter', sans-serif; }
+  .ui-border { border-color: #2a2a2a; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { scrollbar-width: none; }
+  .canvas-grid { background-image: radial-gradient(#1a1a1a 1px, transparent 1px); background-size: 24px 24px; }
+
+  /* Form-control reset */
+  input, textarea, select, button {
+    outline: none; background: transparent; color: inherit; font: inherit;
+    -webkit-appearance: none; -moz-appearance: none; appearance: none;
+  }
+  input:focus, textarea:focus, select:focus, button:focus,
+  input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible { outline: none; box-shadow: none; }
+  input[type="number"] { -moz-appearance: textfield; }
+  input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="search"]::-webkit-search-cancel-button, input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; }
+  input[type="color"] { padding: 0; border: none; background: transparent; cursor: pointer; }
+  input[type="color"]::-webkit-color-swatch { border: 1px solid #2a2a2a; border-radius: 3px; }
+  input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+  input[type="range"] { background: transparent; cursor: pointer; }
+  input[type="range"]::-webkit-slider-runnable-track { height: 4px; background: #2a2a2a; border-radius: 2px; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: #0d99ff; border-radius: 50%; margin-top: -4px; border: none; }
+  input[type="range"]::-moz-range-track { height: 4px; background: #2a2a2a; border-radius: 2px; }
+  input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; background: #0d99ff; border-radius: 50%; border: none; }
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+  select { padding-right: 22px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23a1a1a1' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; }
+
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20; font-size: 18px; user-select: none; }
+
+  /* Left icon rail */
+  .rail-btn { width: 40px; height: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 12px; color: #a1a1a1; cursor: pointer; transition: color .12s, background .12s; text-decoration: none; }
+  .rail-btn:hover { color: #e1e1e1; background: #262626; }
+  .rail-btn.active { color: #0d99ff; background: rgba(13,153,255,0.05); border: 1px solid rgba(13,153,255,0.2); }
+  .rail-btn .lbl { font-size: 9px; font-weight: 500; }
+
+  /* Input field */
+  .input-field { background: #161616; border: 1px solid #2a2a2a; transition: border-color .15s, background .15s; }
+  .input-field:focus-within { border-color: #0d99ff; background: #1e1e1e; }
+  .input-field input, .input-field select { background: transparent; outline: none; border: none; width: 100%; color: #e1e1e1; font-size: 12px; padding: 0; }
+
+  /* Icon tile grid */
+  .tile { background: #161616; border: 1px solid #2a2a2a; border-radius: 8px; padding: 14px 8px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: background .12s, transform .12s, border-color .12s; }
+  .tile:hover { background: #1e1e1e; border-color: #0d99ff; transform: translateY(-1px); }
+  .tile svg { width: var(--icon-size, 48px); height: var(--icon-size, 48px); display: block; color: #e1e1e1; }
+  .tile .name { font-size: 10px; color: #a1a1a1; text-align: center; word-break: break-all; font-family: 'JetBrains Mono', monospace; }
+
+  /* Detail dialog */
+  dialog { background: #161616; color: #e1e1e1; border: 1px solid #2a2a2a; border-radius: 12px; max-width: 640px; width: 90%; padding: 0; }
+  dialog::backdrop { background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
+  .dialog-preview { display: flex; justify-content: center; padding: 32px; background: #0a0a0a; border-radius: 8px; border: 1px solid #2a2a2a; }
+  .dialog-preview svg { width: 96px; height: 96px; }
+  textarea.code { width: 100%; min-height: 140px; background: #0a0a0a; color: #e1e1e1; border: 1px solid #2a2a2a; border-radius: 6px; padding: 10px; font-family: 'JetBrains Mono', monospace; font-size: 11px; resize: vertical; outline: none; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1e1e1e; color: #fff; padding: 8px 14px; border-radius: 6px; border: 1px solid #333; font-size: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 100; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+</style>
+</head>
+<body class="flex flex-col bg-surface">
+
+<header class="h-12 border-b ui-border flex items-center justify-between px-4 bg-surface-container-low z-20 flex-shrink-0">
+  <div class="flex items-center gap-3">
+    <div class="w-6 h-6 bg-primary rounded flex items-center justify-center"><span class="text-[10px] font-bold text-white">K</span></div>
+    <span class="font-medium text-sm text-on-surface">KFE Icons Studio</span>
+    <span class="text-outline">/</span>
+    <span class="text-on-surface-variant text-[11px] font-mono">browse</span>
+  </div>
+  <div class="flex items-center gap-3">
+    <span id="stats" class="text-on-surface-variant text-[11px] font-mono opacity-60">loading…</span>
+  </div>
+</header>
+
+<div class="flex flex-1 overflow-hidden">
+  <!-- Left icon rail (page nav) -->
+  <aside class="w-14 border-r ui-border flex flex-col items-center py-3 space-y-1 bg-surface-container-lowest flex-shrink-0">
+    <a href="/browse" class="rail-btn active" title="Browse">
+      <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">grid_view</span>
+      <span class="lbl">Browse</span>
+    </a>
+    <a href="/studio" class="rail-btn" title="Studio">
+      <span class="material-symbols-outlined">edit</span>
+      <span class="lbl">Studio</span>
+    </a>
+    <a href="/graph" class="rail-btn" title="Graph metrics">
+      <span class="material-symbols-outlined">insights</span>
+      <span class="lbl">Graph</span>
+    </a>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 flex flex-col overflow-hidden">
+    <!-- Toolbar -->
+    <div class="flex items-center gap-3 px-4 py-3 border-b ui-border bg-surface-container-low flex-wrap">
+      <div class="input-field rounded-lg px-3 py-1.5 flex items-center gap-2 w-64">
+        <span class="material-symbols-outlined text-sm text-on-surface-variant">search</span>
+        <input id="search" type="search" placeholder="Filter by name…" class="flex-1 text-[12px]" />
+      </div>
+      <div class="input-field rounded-lg px-3 py-1.5 flex items-center gap-2">
+        <span class="material-symbols-outlined text-sm text-on-surface-variant">folder</span>
+        <select id="category" class="text-[12px] font-mono min-w-[110px]"><option value="all">all</option></select>
+      </div>
+      <div class="input-field rounded-lg px-2 py-1.5 flex items-center gap-2">
+        <span class="material-symbols-outlined text-sm text-on-surface-variant">palette</span>
+        <input id="color" type="color" value="#e1e1e1" class="w-6 h-6" />
+      </div>
+      <div class="input-field rounded-lg px-3 py-1.5 flex items-center gap-2">
+        <span class="material-symbols-outlined text-sm text-on-surface-variant">photo_size_select_actual</span>
+        <input id="size" type="range" min="24" max="128" step="4" value="48" class="w-28" />
+        <span id="sizeLabel" class="text-[11px] text-on-surface-variant font-mono min-w-[24px] text-right">48</span>
+      </div>
+    </div>
+    <!-- Grid -->
+    <div id="grid" class="flex-1 overflow-auto canvas-grid p-4" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; align-content: start;">
+      <div class="col-span-full text-center text-on-surface-variant py-8">Loading…</div>
+    </div>
+  </main>
+</div>
+
+<!-- Detail dialog -->
+<dialog id="detail">
+  <div class="p-4 border-b ui-border flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary">image</span>
+      <strong id="d-title" class="text-sm">icon</strong>
+    </div>
+    <button onclick="document.getElementById('detail').close()" class="text-on-surface-variant hover:text-on-surface p-1 rounded">
+      <span class="material-symbols-outlined text-sm">close</span>
+    </button>
+  </div>
+  <div class="p-4 space-y-3">
+    <div class="dialog-preview" id="d-preview"></div>
+    <div class="flex items-center justify-between">
+      <span class="text-[10px] text-on-surface-variant/60 uppercase tracking-wider font-bold">SVG Markup</span>
+      <div class="flex gap-2">
+        <button class="px-3 py-1.5 text-[11px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded" id="d-edit">
+          <span class="material-symbols-outlined text-sm align-middle">edit</span>
+          <span class="ml-1">Open in Studio</span>
+        </button>
+        <button class="px-3 py-1.5 rounded-lg bg-primary text-white text-[11px] font-semibold hover:opacity-90" id="d-copy">
+          <span class="material-symbols-outlined text-sm align-middle">content_copy</span>
+          <span class="ml-1">Copy</span>
+        </button>
+      </div>
+    </div>
+    <textarea class="code" id="d-code" readonly></textarea>
+  </div>
+</dialog>
+
+<script type="module" src="/assets/js/browse.js"></script>
+</body>
+</html>

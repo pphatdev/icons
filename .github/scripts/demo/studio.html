@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Studio · KFE Icons Studio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-25..0" />
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          'inverse-surface': '#e5e2e1',
+          'surface-container': '#1e1e1e',
+          'outline-variant': '#2a2a2a',
+          'surface-container-lowest': '#0a0a0a',
+          'surface-bright': '#2c2c2c',
+          'on-background': '#e5e2e1',
+          'primary': '#0d99ff',
+          'surface-variant': '#252525',
+          'inverse-primary': '#0061a5',
+          'surface-dim': '#121212',
+          'secondary-container': '#333333',
+          'secondary': '#c6c6c7',
+          'surface-container-high': '#262626',
+          'on-primary': '#ffffff',
+          'surface-container-highest': '#333333',
+          'error': '#ffb4ab',
+          'on-primary-container': '#ffffff',
+          'on-surface-variant': '#a1a1a1',
+          'on-surface': '#e1e1e1',
+          'background': '#0a0a0a',
+          'surface-container-low': '#161616',
+          'outline': '#444444',
+          'surface': '#0a0a0a',
+          'primary-container': '#0d99ff',
+        },
+        borderRadius: { DEFAULT: '0.125rem', lg: '0.375rem', xl: '0.5rem', full: '9999px' },
+        fontFamily: {
+          sans: ['Inter', 'sans-serif'],
+          mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+        },
+      }
+    }
+  };
+</script>
+<style>
+  body { background: #0a0a0a; color: #e1e1e1; height: 100vh; overflow: hidden; font-size: 12px; font-family: 'Inter', sans-serif; }
+  .ui-border { border-color: #2a2a2a; }
+
+  /* Reset default browser form-control chrome. Focus is indicated by the
+     `.input-field:focus-within` border-color change or by custom rules
+     below — never by the browser's default blue ring. */
+  input, textarea, select, button {
+    outline: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+  input:focus, textarea:focus, select:focus, button:focus,
+  input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+  /* Number input spinners */
+  input[type="number"] { -moz-appearance: textfield; }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  /* Search input: hide the WebKit cancel button */
+  input[type="search"]::-webkit-search-cancel-button,
+  input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; }
+  /* Color input: strip default padding/border so our container styles it */
+  input[type="color"] { padding: 0; border: none; background: transparent; cursor: pointer; }
+  input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+  input[type="color"]::-webkit-color-swatch { border: 1px solid #2a2a2a; border-radius: 3px; }
+  input[type="color"]::-moz-color-swatch { border: 1px solid #2a2a2a; border-radius: 3px; }
+  /* Select: drop native arrow, add our own */
+  select {
+    padding-right: 22px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23a1a1a1' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+  }
+  select::-ms-expand { display: none; }
+  /* Range slider */
+  input[type="range"] { background: transparent; cursor: pointer; }
+  input[type="range"]::-webkit-slider-runnable-track { height: 4px; background: #2a2a2a; border-radius: 2px; }
+  input[type="range"]::-moz-range-track { height: 4px; background: #2a2a2a; border-radius: 2px; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: #0d99ff; border-radius: 50%; margin-top: -4px; border: none; }
+  input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; background: #0d99ff; border-radius: 50%; border: none; }
+  /* Autofill dark override */
+  input:-webkit-autofill { -webkit-text-fill-color: #e1e1e1; -webkit-box-shadow: 0 0 0 1000px #161616 inset; }
+  /* Preserve pointer cursor on interactive buttons */
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { scrollbar-width: none; }
+  .canvas-grid { background-image: radial-gradient(#2a2a2a 1px, transparent 1px); background-size: 24px 24px; }
+  .glass-panel { background: rgba(30,30,30,0.72); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+  .input-field { background: #161616; border: 1px solid #2a2a2a; transition: border-color .15s, background .15s; }
+  .input-field:focus-within { border-color: #0d99ff; background: #1e1e1e; }
+  .input-field input { background: transparent; outline: none; border: none; width: 100%; color: #e1e1e1; font-size: 12px; padding: 0; }
+  .input-field input[type="color"] { padding: 0; width: 24px; height: 24px; cursor: pointer; }
+  .input-field input[type="color"]::-webkit-color-swatch { border: 1px solid #2a2a2a; border-radius: 3px; }
+  .input-field input[type="color"]::-moz-color-swatch { border: 1px solid #2a2a2a; border-radius: 3px; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20; font-size: 18px; user-select: none; }
+
+  /* Canvas panel: dark artboard */
+  #canvas { display: block; background: #161616; box-shadow: 0 12px 40px rgba(0,0,0,0.6); border: 1px solid #2a2a2a; border-radius: 4px; color: #e1e1e1; }
+  #canvas [data-shape] { cursor: move; }
+
+  /* Selection overlay. Container has pointer-events: none (Tailwind) so the
+     shape below still gets clicks in empty overlay regions; handles opt back in
+     with `pointer-events: auto`. Border/label stay non-interactive. */
+  .sel-border { position: absolute; border: 1px solid #0d99ff; pointer-events: none; z-index: 4; }
+  .m-label { pointer-events: none; }
+  #handles .handle { position: absolute; width: 10px; height: 10px; background: white; border: 1px solid #0d99ff; border-radius: 2px; transform: translate(-50%, -50%); pointer-events: auto; z-index: 5; box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+  .handle[data-corner="tl"], .handle[data-corner="br"] { cursor: nwse-resize; }
+  .handle[data-corner="tr"], .handle[data-corner="bl"] { cursor: nesw-resize; }
+  /* Path-anchor dots (node-edit mode) — use `#handles .anchor` so the same
+     specificity pattern as `.handle` reliably beats `pointer-events: none`
+     on the overlay container. */
+  #handles .anchor { position: absolute; width: 10px; height: 10px; background: #0d99ff; border: 1.5px solid white; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: auto; z-index: 6; cursor: move; box-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+  #handles .anchor:hover { background: white; border-color: #0d99ff; transform: translate(-50%, -50%) scale(1.4); }
+  .m-label { position: absolute; background: #0d99ff; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-family: 'JetBrains Mono', monospace; font-weight: 700; transform: translate(-50%, 0); z-index: 5; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #1e1e1e; color: #fff; padding: 8px 14px; border-radius: 6px; border: 1px solid #333; font-size: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 100; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+
+  /* Icon list */
+  .icon-list-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 11px; color: #a1a1a1; }
+  .icon-list-item:hover { background: #262626; color: #e1e1e1; }
+  .icon-list-item.active { background: rgba(13,153,255,0.1); color: #0d99ff; }
+  .icon-list-item svg { width: 18px; height: 18px; flex-shrink: 0; color: currentColor; }
+  .icon-list-item .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+  .icon-list-item .cat { font-size: 9px; color: #6b7280; font-family: 'JetBrains Mono', monospace; }
+  .icon-list-item.active .cat { color: rgba(13,153,255,0.6); }
+
+  /* Element tree */
+  .tree-node { padding: 4px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #a1a1a1; }
+  .tree-node:hover { background: #262626; color: #e1e1e1; }
+  .tree-node.selected { background: rgba(13,153,255,0.1); color: #0d99ff; }
+  .tree-node .idx { color: #6b7280; }
+  .tree-node.selected .idx { color: rgba(13,153,255,0.6); }
+
+  /* Section labels */
+  .p-title { font-size: 10px; font-weight: 700; color: rgba(161,161,161,0.6); letter-spacing: 0.08em; text-transform: uppercase; }
+
+  /* Toolbar tool buttons */
+  .tool-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; color: rgba(255,255,255,0.55); cursor: pointer; transition: color .12s, background .12s; }
+  .tool-btn:hover { color: white; background: rgba(255,255,255,0.08); }
+  .tool-btn.active { background: #0d99ff; color: white; box-shadow: 0 4px 12px rgba(13,153,255,0.4); }
+  .tool-btn:disabled { opacity: 0.4; cursor: not-allowed; background: transparent; }
+
+  /* Icon-rail buttons */
+  .rail-btn { width: 40px; height: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 12px; color: #a1a1a1; cursor: pointer; transition: color .12s, background .12s; }
+  .rail-btn:hover { color: #e1e1e1; background: #262626; }
+  .rail-btn.active { color: #0d99ff; background: rgba(13,153,255,0.05); border: 1px solid rgba(13,153,255,0.2); }
+  .rail-btn .lbl { font-size: 9px; font-weight: 500; }
+
+  /* Align toolbar buttons */
+  .align-btn { padding: 6px; display: flex; align-items: center; justify-content: center; border-radius: 6px; color: #a1a1a1; cursor: pointer; background: transparent; border: none; }
+  .align-btn:hover { background: #333; color: #e1e1e1; }
+
+  /* Quick-actions popover buttons */
+  #quick-actions { pointer-events: auto; }
+  .qa-btn { position: relative; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 4px; color: rgba(255,255,255,0.7); cursor: pointer; background: transparent; border: none; }
+  .qa-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+  .qa-btn.active { background: #0d99ff; color: white; }
+
+  /* Color swatches */
+  .swatch, .preview-swatch { width: 18px; height: 18px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.12); cursor: pointer; padding: 0; background-color: currentColor; transition: transform .1s, border-color .1s; flex-shrink: 0; }
+  .swatch:hover, .preview-swatch:hover { transform: scale(1.15); border-color: #0d99ff; }
+  .swatch.active, .preview-swatch.active { border-color: #0d99ff; box-shadow: 0 0 0 1px #0d99ff; }
+  .swatch.none, .preview-swatch.none { background: linear-gradient(135deg, transparent calc(50% - 1px), #ef4444 calc(50% - 1px), #ef4444 calc(50% + 1px), transparent calc(50% + 1px)), repeating-conic-gradient(#333 0% 25%, #444 0% 50%) 50% / 6px 6px; }
+  .swatch.current, .preview-swatch.current { background: conic-gradient(from 180deg at 50% 50%, #ef4444 0deg, #eab308 60deg, #22c55e 120deg, #3b82f6 180deg, #a855f7 240deg, #ec4899 300deg, #ef4444 360deg); }
+  .preview-swatch { width: 16px; height: 16px; }
+</style>
+</head>
+<body class="flex flex-col bg-surface">
+
+<!-- Top nav -->
+<header class="h-12 border-b ui-border flex items-center justify-between px-4 bg-surface-container-low z-20 flex-shrink-0">
+  <div class="flex items-center space-x-4">
+    <div class="flex items-center gap-2">
+      <div class="w-6 h-6 bg-primary rounded flex items-center justify-center">
+        <span class="text-[10px] font-bold text-white">K</span>
+      </div>
+      <span class="font-medium text-sm text-on-surface">KFE Icons Studio</span>
+    </div>
+    <span class="text-outline">/</span>
+    <span id="current-name" class="text-on-surface-variant text-[11px] font-mono opacity-70"></span>
+  </div>
+  <div class="flex items-center space-x-3">
+    <span id="stats" class="text-on-surface-variant text-[11px] font-mono opacity-60">loading…</span>
+    <div class="h-4 w-[1px] bg-outline-variant"></div>
+    <button id="copy" class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded transition-all" title="Copy SVG">
+      <span class="material-symbols-outlined">content_copy</span>
+    </button>
+    <button id="download" class="bg-primary text-white hover:opacity-90 px-4 py-1.5 rounded-lg font-semibold text-xs transition-transform active:scale-95">Export</button>
+  </div>
+</header>
+
+<div class="flex flex-1 overflow-hidden">
+  <!-- Left sidebar -->
+  <aside class="w-64 border-r ui-border flex bg-surface-container-low z-10 flex-shrink-0">
+    <div class="w-14 border-r ui-border flex flex-col items-center py-3 space-y-1 bg-surface-container-lowest">
+      <!-- Page nav (Browse / Studio / Graph) -->
+      <a href="/browse" class="rail-btn" title="Browse all icons">
+        <span class="material-symbols-outlined">grid_view</span>
+        <span class="lbl">Browse</span>
+      </a>
+      <a href="/studio" class="rail-btn active" title="Studio (current)">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">edit</span>
+        <span class="lbl">Studio</span>
+      </a>
+      <a href="/graph" class="rail-btn" title="Registry metrics">
+        <span class="material-symbols-outlined">insights</span>
+        <span class="lbl">Graph</span>
+      </a>
+      <div class="w-6 border-t ui-border my-2"></div>
+      <!-- Studio actions -->
+      <button id="new-icon" class="rail-btn" title="Create new icon">
+        <span class="material-symbols-outlined">add</span>
+        <span class="lbl">New</span>
+      </button>
+      <button id="reset" class="rail-btn" title="Reset icon">
+        <span class="material-symbols-outlined">refresh</span>
+        <span class="lbl">Reset</span>
+      </button>
+      <div class="flex-1"></div>
+    </div>
+    <div class="flex-1 flex flex-col bg-surface-container-low overflow-hidden">
+      <div class="p-3 border-b ui-border">
+        <div class="relative">
+          <span class="absolute left-2.5 top-1/2 -translate-y-1/2 material-symbols-outlined text-sm text-on-surface-variant">search</span>
+          <input id="icon-search" type="text" placeholder="Search layers..." class="w-full bg-surface-container-lowest border border-outline-variant focus:border-primary text-[11px] rounded-lg pl-8 pr-2 py-1.5 text-on-surface outline-none placeholder:text-on-surface-variant/40" />
+        </div>
+      </div>
+      <div class="flex-1 overflow-y-auto scrollbar-hide p-2">
+        <div class="flex items-center justify-between px-2 mb-2">
+          <span class="p-title">Layers</span>
+          <button id="new-icon-sm" class="material-symbols-outlined text-sm text-on-surface-variant hover:text-on-surface cursor-pointer" title="New icon">add</button>
+        </div>
+        <div id="icon-list" class="space-y-0.5"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Canvas -->
+  <main class="flex-1 relative bg-surface-container-lowest overflow-hidden canvas-grid">
+    <div class="absolute top-3 left-3 text-[11px] text-on-surface-variant/60 font-medium tracking-wide uppercase z-10" id="canvas-label"></div>
+
+    <!-- Preview color: changes how `currentColor` renders on the canvas.
+         This is a preview-only setting; the SVG source is unaffected. -->
+    <div class="absolute top-3 right-3 flex items-center gap-2 z-10">
+      <div class="flex items-center gap-1 glass-panel border border-white/5 rounded-lg px-2 py-1">
+        <span class="text-[10px] text-on-surface-variant/70 font-medium">Preview</span>
+        <button class="preview-swatch" data-preview="#e1e1e1" title="Default"></button>
+        <button class="preview-swatch" data-preview="#ffffff" title="White"></button>
+        <button class="preview-swatch" data-preview="#000000" title="Black"></button>
+        <button class="preview-swatch" data-preview="#0d99ff" title="Blue"></button>
+        <button class="preview-swatch" data-preview="#22c55e" title="Green"></button>
+        <button class="preview-swatch" data-preview="#ef4444" title="Red"></button>
+        <input id="preview-color" type="color" value="#e1e1e1" title="Custom preview color" class="w-6 h-6 rounded cursor-pointer bg-transparent border border-white/10 p-0" />
+      </div>
+      <button id="center" class="text-[11px] px-2 py-1 rounded-lg glass-panel text-on-surface-variant hover:text-on-surface border border-white/5" title="Clear transform on selection">
+        <span class="material-symbols-outlined text-sm align-middle">crop_free</span>
+      </button>
+    </div>
+
+    <div class="absolute inset-0 flex items-center justify-center">
+      <div class="relative" id="canvas-wrap">
+        <div id="canvas-host"></div>
+        <div id="handles" class="absolute inset-0 pointer-events-none"></div>
+        <!-- Floating quick-edit popover for the selected shape -->
+        <div id="quick-actions" class="absolute glass-panel border border-white/10 rounded-lg shadow-2xl px-1.5 py-1 flex items-center gap-1 z-10 hidden">
+          <label class="qa-btn" title="Fill color">
+            <span class="material-symbols-outlined" style="font-size:16px;">format_color_fill</span>
+            <input type="color" id="qa-fill" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+          </label>
+          <label class="qa-btn" title="Stroke color">
+            <span class="material-symbols-outlined" style="font-size:16px;">border_color</span>
+            <input type="color" id="qa-stroke" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+          </label>
+          <div class="flex items-center bg-white/5 border border-white/10 rounded px-1.5 h-6 gap-1" title="Stroke width">
+            <span class="material-symbols-outlined text-white/60" style="font-size:12px;">line_weight</span>
+            <input type="number" id="qa-stroke-w" min="0" step="0.5" placeholder="0" class="w-8 bg-transparent border-none outline-none text-[11px] text-white font-mono p-0" />
+          </div>
+          <div class="w-px h-4 bg-white/10 mx-0.5"></div>
+          <button class="qa-btn hidden" id="qa-edit-path" title="Edit path points (Enter)">
+            <span class="material-symbols-outlined" style="font-size:16px;">edit_note</span>
+          </button>
+          <button class="qa-btn" id="qa-duplicate" title="Duplicate (Ctrl+D)">
+            <span class="material-symbols-outlined" style="font-size:16px;">content_copy</span>
+          </button>
+          <button class="qa-btn text-red-400 hover:text-red-300" id="qa-delete" title="Delete">
+            <span class="material-symbols-outlined" style="font-size:16px;">delete</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating bottom tool palette -->
+    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-30">
+      <div id="tools-palette" class="flex items-center glass-panel border border-white/5 rounded-full p-1 shadow-[0_20px_50px_rgba(0,0,0,0.5)] gap-0.5 ring-1 ring-black/20">
+        <button data-tool="select" class="tool-btn active" title="Select (V)">
+          <span class="material-symbols-outlined" style="font-size: 20px;">near_me</span>
+        </button>
+        <div class="w-px h-6 bg-white/10 mx-1"></div>
+        <button data-tool="rect" class="tool-btn" title="Rectangle (R)">
+          <span class="material-symbols-outlined" style="font-size: 20px;">check_box_outline_blank</span>
+        </button>
+        <button data-tool="ellipse" class="tool-btn" title="Ellipse (O)">
+          <span class="material-symbols-outlined" style="font-size: 20px;">circle</span>
+        </button>
+        <button data-tool="line" class="tool-btn" title="Line (L)">
+          <span class="material-symbols-outlined" style="font-size: 20px;">horizontal_rule</span>
+        </button>
+        <div class="w-px h-6 bg-white/10 mx-1"></div>
+        <button id="undo" class="tool-btn" title="Undo (Ctrl+Z)" disabled>
+          <span class="material-symbols-outlined" style="font-size: 20px;">undo</span>
+        </button>
+        <button id="redo" class="tool-btn" title="Redo (Ctrl+Y)" disabled>
+          <span class="material-symbols-outlined" style="font-size: 20px;">redo</span>
+        </button>
+        <div class="w-px h-6 bg-white/10 mx-1"></div>
+        <button id="tool-duplicate" class="tool-btn" title="Duplicate (Ctrl+D)">
+          <span class="material-symbols-outlined" style="font-size: 20px;">content_copy</span>
+        </button>
+        <button id="tool-delete" class="tool-btn" title="Delete (Del)">
+          <span class="material-symbols-outlined" style="font-size: 20px;">delete</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Zoom control -->
+    <div class="absolute bottom-8 right-6 z-30">
+      <div class="flex items-center glass-panel border border-white/5 rounded-full p-1.5 shadow gap-2">
+        <button id="zoom-out" class="tool-btn" style="width: 28px; height: 28px;" title="Zoom out">
+          <span class="material-symbols-outlined" style="font-size: 16px;">remove</span>
+        </button>
+        <span id="zoom-label" class="text-[11px] font-mono text-on-surface-variant min-w-[42px] text-center">400%</span>
+        <button id="zoom-in" class="tool-btn" style="width: 28px; height: 28px;" title="Zoom in">
+          <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Right sidebar -->
+  <aside class="w-72 border-l ui-border flex flex-col bg-surface-container-low z-10 flex-shrink-0">
+    <div class="flex items-center border-b ui-border bg-surface-container-low px-3 flex-shrink-0 h-11">
+      <span class="text-xs text-on-surface font-semibold">Design</span>
+      <div class="flex-1"></div>
+      <div id="zoom-display" class="text-on-surface-variant text-[11px] font-mono opacity-60">400%</div>
+    </div>
+    <div id="props" class="overflow-y-auto scrollbar-hide flex-1 p-4 space-y-5"></div>
+    <div class="border-t ui-border p-4 flex-shrink-0">
+      <div class="flex items-center justify-between mb-2">
+        <span class="p-title">Elements</span>
+        <span id="tree-count" class="text-[10px] text-on-surface-variant/60 font-mono">0</span>
+      </div>
+      <div id="tree" class="max-h-40 overflow-auto scrollbar-hide space-y-0.5"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- Save-as-JSON dialog -->
+<dialog id="save-dialog" class="bg-surface-container border border-outline-variant rounded-xl p-0 max-w-md w-11/12 text-on-surface backdrop:bg-black/60 backdrop:backdrop-blur-sm">
+  <div class="p-4 border-b ui-border flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary">save</span>
+      <h3 class="text-sm font-semibold text-on-surface">Save Icon</h3>
+    </div>
+    <button onclick="document.getElementById('save-dialog').close()" class="text-on-surface-variant hover:text-on-surface p-1 rounded">
+      <span class="material-symbols-outlined text-sm">close</span>
+    </button>
+  </div>
+  <div class="p-4 space-y-4">
+    <div>
+      <label class="text-[10px] uppercase font-bold text-on-surface-variant/60 tracking-wider block mb-1">Icon Name</label>
+      <div class="input-field rounded-lg px-3 py-2 flex items-center">
+        <span class="material-symbols-outlined text-sm text-on-surface-variant mr-2">edit</span>
+        <input type="text" id="save-name" placeholder="e.g. my-icon (lowercase, hyphens)" class="font-mono" />
+      </div>
+      <div class="text-[10px] text-on-surface-variant/50 mt-1">Lowercase, alphanumeric and hyphens only.</div>
+    </div>
+    <div>
+      <label class="text-[10px] uppercase font-bold text-on-surface-variant/60 tracking-wider block mb-1">Category</label>
+      <div class="input-field rounded-lg px-3 py-2 flex items-center">
+        <span class="material-symbols-outlined text-sm text-on-surface-variant mr-2">folder</span>
+        <select id="save-category" class="w-full bg-transparent outline-none text-[12px] text-on-surface font-mono"></select>
+      </div>
+    </div>
+    <div id="save-new-cat-wrap" class="hidden">
+      <label class="text-[10px] uppercase font-bold text-on-surface-variant/60 tracking-wider block mb-1">New Category Name</label>
+      <div class="input-field rounded-lg px-3 py-2 flex items-center">
+        <span class="material-symbols-outlined text-sm text-on-surface-variant mr-2">create_new_folder</span>
+        <input type="text" id="save-new-cat" placeholder="e.g. logos" class="font-mono" />
+      </div>
+    </div>
+    <div class="text-[11px] text-on-surface-variant bg-surface-container-lowest rounded-lg px-3 py-2 border border-outline-variant">
+      <div class="flex items-center gap-1.5 mb-1"><span class="material-symbols-outlined text-sm text-primary">save</span><span class="font-semibold">Writes directly to:</span></div>
+      <code class="text-primary font-mono text-[11px]" id="save-preview-path">brands/my-icon.json</code>
+      <div class="text-on-surface-variant/60 mt-1.5 text-[10px]">Saved via the local demo server. Commit and push &mdash; the GitHub Action will regenerate <code class="font-mono">&lt;category&gt;.json</code> and <code class="font-mono">index.json</code>. If the server can't write, the browser will download the file instead.</div>
+    </div>
+  </div>
+  <div class="p-4 border-t ui-border flex justify-end gap-2">
+    <button onclick="document.getElementById('save-dialog').close()" class="px-3 py-1.5 rounded-lg text-[11px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest">Cancel</button>
+    <button id="save-confirm" class="px-4 py-1.5 rounded-lg bg-primary text-white text-[11px] font-semibold hover:opacity-90 disabled:opacity-50">Save to Repo</button>
+  </div>
+</dialog>
+
+<script type="module" src="/assets/js/studio.js"></script>
+</body>
+</html>

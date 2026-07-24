@@ -50,3 +50,15 @@ To add a new icon to the registry:
 2. That's it! You do not need to manually update `brands.json` or `regular.json`. A GitHub Actions workflow automatically compiles these index files when a Pull Request is opened or code is merged.
 
 For more detailed information, please see our [CONTRIBUTING.md](CONTRIBUTING.md).
+
+
+## Preview Demo
+
+A local demo UI is provided for browsing and testing every icon in the repo — filter by category, search by name, live-recolor via `currentColor`, and copy the SVG markup.
+
+```bash
+npm --prefix .github/scripts install   # first time only
+npm --prefix .github/scripts run demo
+```
+
+Then open http://localhost:5173/. See [`.github/scripts/README.md`](.github/scripts/README.md) for details.
