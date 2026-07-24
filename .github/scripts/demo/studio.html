@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Studio · KFE Icons Studio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'sans-serif'] },
+        colors: {
+          surface: '#131313',
+          'surface-container-low': '#1b1b1c',
+          'surface-container-high': '#2b2b2b',
+          'surface-bright': '#393939',
+          accent: '#0d99ff',
+        }
+      }
+    }
+  };
+</script>
+<style>
+  body { background: #131313; color: #fff; height: 100vh; overflow: hidden; font-size: 11px; font-family: 'Inter', sans-serif; }
+  .ui-border { border-color: #2b2b2b; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { scrollbar-width: none; }
+
+  /* Canvas + selection */
+  #canvas { display: block; background: #1b1b1c; box-shadow: 0 8px 32px rgba(0,0,0,0.4); border: 1px solid #2b2b2b; border-radius: 2px; color: #fff; }
+  #canvas [data-shape] { cursor: move; }
+  /* Selection is drawn by the overlay (border + handles), not via CSS outline
+     on the SVG element itself — outline traces the whole bounding box in
+     screen pixels which looks huge on small shapes. */
+  .sel-border { position: absolute; border: 1px solid #0d99ff; pointer-events: none; z-index: 4; }
+  /* Checkerboard on the canvas workspace so transparency is visible */
+  #canvas-viewport {
+    background-color: #0a0a0a;
+    background-image:
+      linear-gradient(45deg, rgba(255,255,255,0.02) 25%, transparent 25%),
+      linear-gradient(-45deg, rgba(255,255,255,0.02) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.02) 75%),
+      linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.02) 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+  }
+
+  /* Selection handles overlay */
+  .handle { position: absolute; width: 8px; height: 8px; background: white; border: 1px solid #0d99ff; transform: translate(-50%, -50%); pointer-events: none; z-index: 5; }
+  .m-label { position: absolute; background: #0d99ff; color: white; padding: 1px 6px; border-radius: 2px; font-size: 10px; transform: translate(-50%, 0); pointer-events: none; z-index: 5; white-space: nowrap; }
+
+  /* Toast (reused from shell.js) */
+  .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #1e1e1e; color: #fff; padding: 8px 14px; border-radius: 6px; border: 1px solid #333; font-size: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 100; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+
+  /* Icon list items */
+  .icon-list-item { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; color: #cfd0d4; }
+  .icon-list-item:hover { background: #2b2b2b; }
+  .icon-list-item.active { background: #0d99ff; color: white; }
+  .icon-list-item svg { width: 18px; height: 18px; flex-shrink: 0; color: currentColor; }
+  .icon-list-item .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .icon-list-item .cat { color: #808289; font-size: 9px; }
+  .icon-list-item.active .cat { color: rgba(255,255,255,0.75); }
+
+  /* Element tree nodes */
+  .tree-node { padding: 4px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: #cfd0d4; }
+  .tree-node:hover { background: #2b2b2b; }
+  .tree-node.selected { background: #0d99ff; color: white; }
+  .tree-node .idx { color: #808289; }
+  .tree-node.selected .idx { color: rgba(255,255,255,0.75); }
+  .tree-node .tag { color: #7cc4ff; }
+  .tree-node.selected .tag { color: white; }
+
+  /* Property panel */
+  .p-section { padding: 12px 14px; border-bottom: 1px solid #2b2b2b; }
+  .p-title { font-size: 10px; font-weight: 700; color: #808289; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+  .p-input-cell { display: flex; align-items: center; background: #1b1b1c; border-radius: 4px; padding: 3px 8px; border: 1px solid transparent; }
+  .p-input-cell:focus-within { border-color: #0d99ff; }
+  .p-input-cell .k { color: #808289; margin-right: 6px; width: 12px; font-size: 10px; text-align: center; flex-shrink: 0; }
+  .p-input-cell input { background: transparent; width: 100%; font-size: 11px; outline: none; color: #fff; border: none; padding: 2px 0; }
+  .p-input-cell input[type="color"] { padding: 0; width: 20px; height: 20px; border: none; background: transparent; cursor: pointer; }
+  .p-input-cell input[type="color"]::-webkit-color-swatch { border: 1px solid #393939; border-radius: 2px; }
+  .p-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .p-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .p-btn { padding: 5px 8px; background: transparent; border: 1px solid #2b2b2b; color: #cfd0d4; border-radius: 4px; font-size: 11px; cursor: pointer; }
+  .p-btn:hover { background: #2b2b2b; }
+  .p-btn.danger { border-color: rgba(255,107,107,0.4); color: #ff8080; }
+  .p-btn.danger:hover { background: rgba(255,107,107,0.1); }
+  .p-check { display: flex; align-items: center; gap: 6px; font-size: 10px; color: #808289; }
+
+  /* Tool button in floating palette */
+  .tool-btn { padding: 6px; color: #cfd0d4; border-radius: 4px; cursor: pointer; background: transparent; border: none; display: flex; align-items: center; justify-content: center; }
+  .tool-btn:hover { background: #333; color: #fff; }
+  .tool-btn.active { background: #0d99ff; color: white; }
+  .tool-btn:disabled { opacity: 0.4; cursor: not-allowed; background: transparent; }
+  .tool-btn svg { width: 16px; height: 16px; display: block; }
+  .tool-sep { width: 1px; height: 16px; background: #333; margin: 0 2px; }
+</style>
+</head>
+<body class="flex flex-col">
+
+<!-- Top nav -->
+<header class="h-12 border-b ui-border flex items-center justify-between px-4 bg-surface flex-shrink-0">
+  <div class="flex items-center gap-4">
+    <div class="flex items-center gap-2">
+      <span class="font-semibold text-sm text-white"><span class="text-accent">KFE</span> Icons Studio</span>
+    </div>
+    <span class="text-gray-500">/</span>
+    <span id="current-name" class="text-gray-300 text-xs">no icon selected</span>
+  </div>
+  <nav class="flex items-center gap-1 bg-surface-container-low rounded p-0.5">
+    <a href="/browse" class="px-3 py-1 rounded text-gray-400 hover:text-white text-xs">Browse</a>
+    <a href="/studio" class="px-3 py-1 rounded bg-accent text-white text-xs">Studio</a>
+    <a href="/graph" class="px-3 py-1 rounded text-gray-400 hover:text-white text-xs">Graph</a>
+  </nav>
+  <div class="flex items-center gap-3">
+    <span id="stats" class="text-gray-500 text-xs">loading…</span>
+    <button id="copy" class="p-1.5 hover:bg-surface-bright rounded text-gray-300" title="Copy SVG">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="1"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+    </button>
+    <button id="download" class="bg-accent hover:opacity-90 text-white px-4 py-1.5 rounded font-medium text-xs">Export</button>
+  </div>
+</header>
+
+<div class="flex flex-1 overflow-hidden">
+
+  <!-- Left sidebar: icon rail + icon list -->
+  <aside class="w-60 border-r ui-border flex bg-surface flex-shrink-0">
+    <div class="w-12 border-r ui-border flex flex-col items-center py-3 gap-2">
+      <button id="new-icon" class="text-white bg-surface-container-high hover:bg-surface-bright rounded p-2 w-9 h-9 flex items-center justify-center" title="Create new icon">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 4v16m8-8H4"/></svg>
+      </button>
+      <div class="border-t ui-border w-6"></div>
+      <button class="text-gray-500 p-2 w-9 h-9 flex items-center justify-center" title="Icons (active)" disabled>
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      </button>
+      <button id="reset" class="text-gray-500 hover:text-white p-2 w-9 h-9 flex items-center justify-center" title="Reset icon to original">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+      </button>
+    </div>
+    <div class="flex-1 p-3 flex flex-col overflow-hidden">
+      <div class="relative mb-3">
+        <svg class="absolute left-2 top-2 w-3 h-3 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input id="icon-search" type="text" placeholder="Search icons..." class="w-full bg-surface-container-low border border-transparent focus:border-accent text-xs rounded-md pl-7 pr-2 py-1.5 text-gray-200 outline-none placeholder-gray-500" />
+      </div>
+      <div id="icon-list" class="flex-1 overflow-auto scrollbar-hide flex flex-col gap-0.5"></div>
+    </div>
+  </aside>
+
+  <!-- Canvas area -->
+  <main class="flex-1 relative overflow-hidden bg-[#0a0a0a]">
+    <div class="absolute top-3 left-3 text-[10px] text-gray-500 z-10" id="canvas-label"></div>
+    <div class="absolute inset-0 flex items-center justify-center" id="canvas-viewport">
+      <div class="relative" id="canvas-wrap">
+        <div id="canvas-host"></div>
+        <div id="handles" class="absolute inset-0 pointer-events-none"></div>
+      </div>
+    </div>
+    <button id="center" class="absolute top-3 right-3 text-xs px-2 py-1 rounded bg-[#1e1e1e] text-gray-300 hover:bg-surface-bright border border-[#333] z-10">Center</button>
+
+    <!-- Floating tools palette -->
+    <div class="absolute bottom-6 left-1/2 -translate-x-1/2">
+      <div id="tools-palette" class="flex items-center bg-[#1e1e1e] border border-[#333] rounded-lg p-1.5 shadow-2xl gap-0.5">
+        <button data-tool="select" class="tool-btn active" title="Select (V)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
+        </button>
+        <button data-tool="rect" class="tool-btn" title="Rectangle (R)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="1"/></svg>
+        </button>
+        <button data-tool="ellipse" class="tool-btn" title="Ellipse (O)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="9" ry="7"/></svg>
+        </button>
+        <button data-tool="line" class="tool-btn" title="Line (L)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="20" x2="20" y2="4"/></svg>
+        </button>
+        <div class="tool-sep"></div>
+        <button id="undo" class="tool-btn" title="Undo (Ctrl+Z)" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-15-6.7L3 13"/></svg>
+        </button>
+        <button id="redo" class="tool-btn" title="Redo (Ctrl+Y)" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0115-6.7L21 13"/></svg>
+        </button>
+        <div class="tool-sep"></div>
+        <button id="tool-duplicate" class="tool-btn" title="Duplicate (Ctrl+D)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="12" height="12" rx="1"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/></svg>
+        </button>
+        <button id="tool-delete" class="tool-btn" title="Delete (Del)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Zoom control bottom right -->
+    <div class="absolute bottom-4 right-4">
+      <div class="flex items-center bg-[#1e1e1e] border border-[#333] rounded p-1 shadow">
+        <input id="zoom" type="range" min="1" max="10" step="0.5" value="4" class="w-24 accent-accent" />
+        <span id="zoom-label" class="text-xs text-gray-400 px-2 min-w-[42px] text-right">400%</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- Right sidebar -->
+  <aside class="w-72 border-l ui-border flex flex-col bg-surface flex-shrink-0">
+    <div class="flex border-b ui-border">
+      <button class="flex-1 py-3 text-xs border-b border-white text-white">Design</button>
+      <button class="flex-1 py-3 text-xs text-gray-500 hover:text-gray-300">Layers</button>
+    </div>
+    <div class="flex-1 overflow-y-auto scrollbar-hide">
+      <div id="props"></div>
+      <div class="p-section">
+        <div class="p-title">Element Tree</div>
+        <div id="tree"></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script type="module" src="/assets/js/studio.js"></script>
+</body>
+</html>

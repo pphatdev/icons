@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Graph · KFE Icons Studio</title>
+<link rel="stylesheet" href="/assets/css/main.css" />
+</head>
+<body>
+
+<header>
+  <h1><span class="accent">KFE</span> Icons Studio</h1>
+  <nav>
+    <a href="/browse" data-tab="browse">Browse</a>
+    <a href="/studio" data-tab="studio">Studio</a>
+    <a href="/graph" data-tab="graph">Graph</a>
+  </nav>
+  <span class="stats-badge" id="stats">loading…</span>
+</header>
+
+<main>
+  <div class="graph-page">
+    <div class="graph-header">
+      <h2>Icon Library Overview</h2>
+      <p>Distribution and complexity metrics across the registry.</p>
+    </div>
+    <div class="metrics" id="g-metrics"></div>
+    <div class="charts">
+      <div class="chart-card">
+        <h3>Icons per Category</h3>
+        <div id="g-cat-bars"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Complexity Distribution (paths per icon)</h3>
+        <div id="g-complexity"></div>
+        <div class="chart-legend">Bucketed by number of shape elements.</div>
+      </div>
+      <div class="chart-card">
+        <h3>Size Distribution (SVG source bytes)</h3>
+        <div id="g-size-dist"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Top 10 Largest Icons</h3>
+        <div id="g-largest"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script type="module" src="/assets/js/graph.js"></script>
+</body>
+</html>

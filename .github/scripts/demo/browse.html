@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Browse · KFE Icons Studio</title>
+<link rel="stylesheet" href="/assets/css/main.css" />
+</head>
+<body>
+
+<header>
+  <h1><span class="accent">KFE</span> Icons Studio</h1>
+  <nav>
+    <a href="/browse" data-tab="browse">Browse</a>
+    <a href="/studio" data-tab="studio">Studio</a>
+    <a href="/graph" data-tab="graph">Graph</a>
+  </nav>
+  <span class="stats-badge" id="stats">loading…</span>
+</header>
+
+<main>
+  <div class="browse-toolbar">
+    <label>Category
+      <select id="category"><option value="all">all</option></select>
+    </label>
+    <input type="search" id="search" placeholder="filter by name…" />
+    <label>Color <input type="color" id="color" value="#7cc4ff" /></label>
+    <label>Size
+      <input type="range" id="size" min="24" max="128" step="4" value="48" />
+      <span id="sizeLabel" style="min-width: 32px; font-variant-numeric: tabular-nums;">48</span>
+    </label>
+  </div>
+  <div id="grid" class="grid"><div class="empty">Loading…</div></div>
+</main>
+
+<dialog id="detail">
+  <div class="dialog-head">
+    <strong id="d-title">icon</strong>
+    <button aria-label="close" onclick="document.getElementById('detail').close()">&times;</button>
+  </div>
+  <div class="dialog-body">
+    <div class="preview" id="d-preview"></div>
+    <div class="flex-between">
+      <span style="font-size: 12px; color: var(--muted);">SVG markup</span>
+      <div style="display: flex; gap: 6px;">
+        <button class="btn ghost" id="d-edit">Open in Studio</button>
+        <button class="btn" id="d-copy">Copy</button>
+      </div>
+    </div>
+    <textarea class="code" id="d-code" readonly></textarea>
+  </div>
+</dialog>
+
+<script type="module" src="/assets/js/browse.js"></script>
+</body>
+</html>

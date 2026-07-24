@@ -6,7 +6,8 @@
     "main": "index.js",
     "scripts": {
         "build": "tsup update-category.ts --format esm --clean",
-        "update-category": "tsx update-category.ts"
+        "update-category": "tsx update-category.ts",
+        "demo": "tsx demo-server.ts"
     },
     "keywords": [],
     "author": "",
