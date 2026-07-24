@@ -1,10 +1,5 @@
 [
   {
-    "name": "7zip",
-    "target": "brands/7zip.json",
-    "type": "brands"
-  },
-  {
     "name": "algolia",
     "target": "brands/algolia.json",
     "type": "brands"
@@ -757,6 +752,11 @@
   {
     "name": "sass",
     "target": "brands/sass.json",
+    "type": "brands"
+  },
+  {
+    "name": "seventzip",
+    "target": "brands/seventzip.json",
     "type": "brands"
   },
   {
