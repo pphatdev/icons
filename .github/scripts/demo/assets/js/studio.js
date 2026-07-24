@@ -29,11 +29,14 @@ const handlesEl = document.getElementById('handles');
 const treeEl = document.getElementById('tree');
 const propsEl = document.getElementById('props');
 const nameEl = document.getElementById('current-name');
-const zoomEl = document.getElementById('zoom');
 const zoomLabel = document.getElementById('zoom-label');
+const zoomInBtn = document.getElementById('zoom-in');
+const zoomOutBtn = document.getElementById('zoom-out');
+const zoomDisplay = document.getElementById('zoom-display');
 const undoBtn = document.getElementById('undo');
 const redoBtn = document.getElementById('redo');
 const newBtn = document.getElementById('new-icon');
+const newBtnSm = document.getElementById('new-icon-sm');
 const resetBtn = document.getElementById('reset');
 const centerBtn = document.getElementById('center');
 const copyBtn = document.getElementById('copy');
@@ -41,6 +44,7 @@ const downloadBtn = document.getElementById('download');
 const paletteEl = document.getElementById('tools-palette');
 const toolDuplicateBtn = document.getElementById('tool-duplicate');
 const toolDeleteBtn = document.getElementById('tool-delete');
+const treeCountEl = document.getElementById('tree-count');
 
 // ---- Helpers ----
 function escapeAttr(v) {
@@ -198,16 +202,20 @@ function renderHandles() {
   border.style.height = h + 'px';
   handlesEl.appendChild(border);
 
-  // Corner handles on the axis-aligned box
+  // Corner handles on the axis-aligned box (interactive: drag to resize)
   const cornerPts = [
-    { x: left, y: top }, { x: right, y: top },
-    { x: left, y: bottom }, { x: right, y: bottom },
+    { x: left, y: top, id: 'tl' },
+    { x: right, y: top, id: 'tr' },
+    { x: left, y: bottom, id: 'bl' },
+    { x: right, y: bottom, id: 'br' },
   ];
   for (const c of cornerPts) {
     const hEl = document.createElement('div');
     hEl.className = 'handle';
+    hEl.dataset.corner = c.id;
     hEl.style.left = c.x + 'px';
     hEl.style.top = c.y + 'px';
+    hEl.addEventListener('pointerdown', (ev) => onHandlePointerDown(c.id, ev));
     handlesEl.appendChild(hEl);
   }
 
@@ -326,6 +334,114 @@ function syncElementToDoc(el) {
   for (const attr of el.attributes) target.setAttribute(attr.name, attr.value);
 }
 
+// ---- Resize (corner handles) ----
+// Replaces the element's translate()+scale() while preserving any other
+// transform components. Non-uniform scale is applied by default; hold Shift
+// on the pointer to constrain proportionally.
+function setTransformResize(el, tx, ty, sx, sy) {
+  const cur = el.getAttribute('transform') || '';
+  const stripped = cur
+    .replace(/translate\([^)]*\)\s*/g, '')
+    .replace(/scale\([^)]*\)\s*/g, '')
+    .trim();
+  const newT = `translate(${tx.toFixed(3)}, ${ty.toFixed(3)}) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`;
+  el.setAttribute('transform', stripped ? `${newT} ${stripped}` : newT);
+}
+
+let resizeCtx = null;
+function onHandlePointerDown(corner, e) {
+  e.stopPropagation();
+  e.preventDefault();
+  if (state.selectedEl === null) return;
+  const canvas = currentCanvasSvg();
+  const src = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
+  const live = canvas?.querySelector(`[data-idx="${state.selectedEl}"]`);
+  if (!src || !live) return;
+
+  let bbox;
+  try { bbox = live.getBBox(); } catch { return; }
+  if (bbox.width <= 0 || bbox.height <= 0) return;
+
+  markBaseline();
+
+  // Effective (post-transform) bbox in the parent's coord space.
+  const startPt = clientToSvg(canvas, e.clientX, e.clientY);
+  const ctm = live.getCTM(); // element's transform relative to its nearest viewport
+  const pt = canvas.createSVGPoint();
+  function toParent(x, y) {
+    pt.x = x; pt.y = y;
+    const p = pt.matrixTransform(ctm);
+    return { x: p.x, y: p.y };
+  }
+  const c00 = toParent(bbox.x, bbox.y);
+  const c11 = toParent(bbox.x + bbox.width, bbox.y + bbox.height);
+  const effLeft = Math.min(c00.x, c11.x);
+  const effTop = Math.min(c00.y, c11.y);
+  const effRight = Math.max(c00.x, c11.x);
+  const effBottom = Math.max(c00.y, c11.y);
+
+  // Anchor = corner opposite the one grabbed.
+  let anchorX = 0, anchorY = 0;
+  if (corner === 'tl') { anchorX = effRight; anchorY = effBottom; }
+  else if (corner === 'tr') { anchorX = effLeft; anchorY = effBottom; }
+  else if (corner === 'bl') { anchorX = effRight; anchorY = effTop; }
+  else if (corner === 'br') { anchorX = effLeft; anchorY = effTop; }
+
+  resizeCtx = {
+    corner, src, live, bbox,
+    anchorX, anchorY,
+    startPt,
+    aspect: bbox.width / bbox.height,
+  };
+  window.addEventListener('pointermove', onResizeMove);
+  window.addEventListener('pointerup', onResizeEnd, { once: true });
+}
+function onResizeMove(e) {
+  if (!resizeCtx) return;
+  const canvas = currentCanvasSvg();
+  if (!canvas) return;
+  const pt = clientToSvg(canvas, e.clientX, e.clientY);
+  let { bbox, anchorX, anchorY, aspect, src, live } = resizeCtx;
+
+  let dx = pt.x - anchorX;
+  let dy = pt.y - anchorY;
+
+  if (e.shiftKey) {
+    // Constrain to the original aspect ratio.
+    const abs = Math.max(Math.abs(dx), Math.abs(dy));
+    const sx = Math.sign(dx) || 1;
+    const sy = Math.sign(dy) || 1;
+    if (Math.abs(dx) / Math.abs(dy || 1) > aspect) {
+      dy = sy * (abs / aspect);
+    } else {
+      dx = sx * (abs * aspect);
+    }
+  }
+
+  const newLeft = Math.min(anchorX + dx, anchorX);
+  const newTop = Math.min(anchorY + dy, anchorY);
+  const newWidth = Math.abs(dx);
+  const newHeight = Math.abs(dy);
+
+  if (newWidth < 0.5 || newHeight < 0.5) return;
+
+  const sx = newWidth / bbox.width;
+  const sy = newHeight / bbox.height;
+  const tx = newLeft - bbox.x * sx;
+  const ty = newTop - bbox.y * sy;
+
+  setTransformResize(src, tx, ty, sx, sy);
+  setTransformResize(live, tx, ty, sx, sy);
+
+  renderProps();
+  renderHandles();
+}
+function onResizeEnd() {
+  window.removeEventListener('pointermove', onResizeMove);
+  resizeCtx = null;
+  commitIfChanged();
+}
+
 // ---- Drawing ----
 let drawCtx = null;
 function createDrawElement(tool, pt) {
@@ -428,16 +544,23 @@ function onDrawEnd(e) {
 }
 
 // ---- Tree ----
+const TAG_ICONS = {
+  path: 'polyline', rect: 'crop_square', circle: 'circle',
+  ellipse: 'circle', line: 'horizontal_rule',
+  polygon: 'change_history', polyline: 'polyline',
+};
 function renderTree() {
-  if (!state.svgDoc) { treeEl.innerHTML = '<div class="text-gray-500 text-center py-4">Load an icon.</div>'; return; }
+  if (!state.svgDoc) { treeEl.innerHTML = '<div class="text-on-surface-variant/60 text-center py-4">Load an icon.</div>'; if (treeCountEl) treeCountEl.textContent = '0'; return; }
   const shapes = state.svgDoc.querySelectorAll('[data-shape]');
-  if (shapes.length === 0) { treeEl.innerHTML = '<div class="text-gray-500 text-center py-4">No shapes.</div>'; return; }
+  if (treeCountEl) treeCountEl.textContent = String(shapes.length);
+  if (shapes.length === 0) { treeEl.innerHTML = '<div class="text-on-surface-variant/60 text-center py-4">No shapes.</div>'; return; }
   const frag = document.createDocumentFragment();
   shapes.forEach(el => {
     const idx = el.getAttribute('data-idx');
+    const tag = el.tagName.toLowerCase();
     const node = document.createElement('div');
     node.className = 'tree-node' + (idx === String(state.selectedEl) ? ' selected' : '');
-    node.innerHTML = `<span class="idx">${String(idx).padStart(2, '0')}</span><span class="tag">&lt;${el.tagName}&gt;</span>`;
+    node.innerHTML = `<span class="idx">${String(idx).padStart(2, '0')}</span><span class="material-symbols-outlined" style="font-size:14px;">${TAG_ICONS[tag] || 'category'}</span><span>${tag}</span>`;
     node.addEventListener('click', () => selectElement(idx));
     frag.appendChild(node);
   });
@@ -560,15 +683,78 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-// ---- Props panel (Figma-style sections) ----
+// ---- Alignment ----
+function getEffectiveBBox(el) {
+  const canvas = currentCanvasSvg();
+  const live = canvas?.querySelector(`[data-idx="${el.getAttribute('data-idx')}"]`);
+  if (!live) return null;
+  let bbox;
+  try { bbox = live.getBBox(); } catch { return null; }
+  const ctm = live.getCTM();
+  if (!ctm) return null;
+  const pt = canvas.createSVGPoint();
+  function toParent(x, y) { pt.x = x; pt.y = y; return pt.matrixTransform(ctm); }
+  const p1 = toParent(bbox.x, bbox.y);
+  const p2 = toParent(bbox.x + bbox.width, bbox.y + bbox.height);
+  const left = Math.min(p1.x, p2.x), right = Math.max(p1.x, p2.x);
+  const top = Math.min(p1.y, p2.y), bottom = Math.max(p1.y, p2.y);
+  return { left, top, right, bottom, width: right - left, height: bottom - top, local: bbox };
+}
+function alignSelection(dir) {
+  if (state.selectedEl === null) return;
+  const target = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
+  if (!target) return;
+  const eff = getEffectiveBBox(target);
+  if (!eff) return;
+  const vb = (state.svgDoc.getAttribute('viewBox') || `0 0 ${state.svgDoc.getAttribute('width') || 48} ${state.svgDoc.getAttribute('height') || 48}`).split(/\s+/).map(Number);
+  const [vx, vy, vw, vh] = vb;
+
+  let dx = 0, dy = 0;
+  switch (dir) {
+    case 'hleft': dx = vx - eff.left; break;
+    case 'hcenter': dx = (vx + vw / 2) - (eff.left + eff.width / 2); break;
+    case 'hright': dx = (vx + vw) - eff.right; break;
+    case 'vtop': dy = vy - eff.top; break;
+    case 'vcenter': dy = (vy + vh / 2) - (eff.top + eff.height / 2); break;
+    case 'vbottom': dy = (vy + vh) - eff.bottom; break;
+  }
+  markBaseline();
+  const cur = parseTranslate(target.getAttribute('transform') || '');
+  setTranslate(target, cur.x + dx, cur.y + dy);
+  const live = currentCanvasSvg()?.querySelector(`[data-idx="${state.selectedEl}"]`);
+  if (live) { const l = parseTranslate(live.getAttribute('transform') || ''); setTranslate(live, l.x + dx, l.y + dy); }
+  renderProps(); renderHandles();
+  commitIfChanged();
+}
+function resizeToDimensions(w, h) {
+  if (state.selectedEl === null) return;
+  const target = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
+  if (!target) return;
+  const eff = getEffectiveBBox(target);
+  if (!eff || !eff.local || eff.local.width <= 0 || eff.local.height <= 0) return;
+  const canvas = currentCanvasSvg();
+  const live = canvas?.querySelector(`[data-idx="${state.selectedEl}"]`);
+  if (!live) return;
+  markBaseline();
+  const sx = w / eff.local.width;
+  const sy = h / eff.local.height;
+  const tx = eff.left - eff.local.x * sx;
+  const ty = eff.top - eff.local.y * sy;
+  setTransformResize(target, tx, ty, sx, sy);
+  setTransformResize(live, tx, ty, sx, sy);
+  renderProps(); renderHandles();
+  commitIfChanged();
+}
+
+// ---- Props panel (Material Design sections) ----
 function renderProps() {
   const svg = state.svgDoc;
-  if (!svg) { propsEl.innerHTML = '<div class="p-section text-gray-500 text-center">Load an icon.</div>'; return; }
+  if (!svg) { propsEl.innerHTML = '<div class="text-on-surface-variant/60 text-center py-8">Load an icon.</div>'; return; }
 
   const titleEl = svg.querySelector('title');
   const title = titleEl?.textContent || '';
-  const width = svg.getAttribute('width') || '';
-  const height = svg.getAttribute('height') || '';
+  const iw = svg.getAttribute('width') || '';
+  const ih = svg.getAttribute('height') || '';
   const viewBox = svg.getAttribute('viewBox') || '';
 
   let target = null;
@@ -576,28 +762,25 @@ function renderProps() {
 
   let html = '';
 
-  // Element header
-  html += `<div class="p-section flex items-center justify-between">
+  // Selection header
+  const selName = target ? target.tagName.toLowerCase() : 'Icon';
+  const selIcon = target ? (TAG_ICONS[selName] || 'category') : 'image';
+  html += `<div class="flex items-center justify-between">
     <div class="flex items-center gap-2">
-      <span class="font-medium text-xs">${target ? escapeAttr(target.tagName) : 'Icon'}</span>
+      <div class="w-5 h-5 bg-surface-container-highest rounded flex items-center justify-center">
+        <span class="material-symbols-outlined" style="font-size:14px;">${selIcon}</span>
+      </div>
+      <span class="font-semibold text-[13px] text-on-surface">${selName}</span>
+      ${target ? `<span class="text-[10px] font-mono text-on-surface-variant/50">#${state.selectedEl}</span>` : ''}
     </div>
     <div class="flex gap-1">
-      <button class="p-btn" id="p-to-front" title="Bring to Front">
-        <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v12m-6-6l6-6 6 6"/></svg>
-      </button>
-      <button class="p-btn" id="p-to-back" title="Send to Back">
-        <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V8m-6 6l6 6 6-6"/></svg>
-      </button>
-      <button class="p-btn" id="p-duplicate" title="Duplicate">
-        <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="12" height="12" rx="1"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/></svg>
-      </button>
-      <button class="p-btn danger" id="p-remove" title="Remove element">
-        <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-      </button>
+      ${target ? `
+        <button class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded" id="p-duplicate" title="Duplicate"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+        <button class="p-1.5 text-on-surface-variant hover:text-error hover:bg-error/10 rounded" id="p-remove" title="Remove"><span class="material-symbols-outlined text-sm">delete</span></button>
+      ` : ''}
     </div>
   </div>`;
 
-  // Element position + fill/stroke sections (only if selected)
   if (target) {
     const fill = target.getAttribute('fill') || 'currentColor';
     const stroke = target.getAttribute('stroke') || '';
@@ -605,71 +788,120 @@ function renderProps() {
     const opacity = target.getAttribute('opacity') || '1';
     const transform = target.getAttribute('transform') || '';
     const trans = parseTranslate(transform);
+    const eff = getEffectiveBBox(target) || { width: 0, height: 0 };
     const fillIsCurrent = fill === 'currentColor';
-    const fillColor = /^#[0-9a-fA-F]+$/.test(fill) ? fill : '#7cc4ff';
+    const fillColor = /^#[0-9a-fA-F]+$/.test(fill) ? fill : '#0d99ff';
     const strokeIsCurrent = stroke === 'currentColor';
     const strokeColor = /^#[0-9a-fA-F]+$/.test(stroke) ? stroke : '#000000';
+    const isRect = target.tagName.toLowerCase() === 'rect';
+    const rx = target.getAttribute('rx') || target.getAttribute('ry') || '';
 
-    html += `<div class="p-section">
+    // Alignment
+    html += `<div class="space-y-3 pt-4 border-t ui-border">
+      <div class="p-title">Alignment</div>
+      <div class="grid grid-cols-6 gap-1 p-1 bg-surface-container-lowest rounded-lg border border-outline-variant">
+        <button class="align-btn" data-align="hleft"  title="Align left"><span class="material-symbols-outlined text-lg">align_horizontal_left</span></button>
+        <button class="align-btn" data-align="hcenter" title="Align center"><span class="material-symbols-outlined text-lg">align_horizontal_center</span></button>
+        <button class="align-btn" data-align="hright" title="Align right"><span class="material-symbols-outlined text-lg">align_horizontal_right</span></button>
+        <button class="align-btn" data-align="vtop"   title="Align top"><span class="material-symbols-outlined text-lg">align_vertical_top</span></button>
+        <button class="align-btn" data-align="vcenter" title="Align middle"><span class="material-symbols-outlined text-lg">align_vertical_center</span></button>
+        <button class="align-btn" data-align="vbottom" title="Align bottom"><span class="material-symbols-outlined text-lg">align_vertical_bottom</span></button>
+      </div>
+    </div>`;
+
+    // Position (X, Y) + Rounded corner (rect only)
+    html += `<div class="space-y-3 pt-4 border-t ui-border">
       <div class="p-title">Position</div>
-      <div class="p-grid-2">
-        <div class="p-input-cell"><span class="k">X</span><input type="number" step="0.1" value="${trans.x}" id="p-tx" /></div>
-        <div class="p-input-cell"><span class="k">Y</span><input type="number" step="0.1" value="${trans.y}" id="p-ty" /></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="input-field rounded-lg px-3 py-2 flex items-center"><span class="text-on-surface-variant text-[11px] font-mono mr-2 w-4">X</span><input type="number" step="0.1" value="${trans.x}" id="p-tx" /></div>
+        <div class="input-field rounded-lg px-3 py-2 flex items-center"><span class="text-on-surface-variant text-[11px] font-mono mr-2 w-4">Y</span><input type="number" step="0.1" value="${trans.y}" id="p-ty" /></div>
+        ${isRect ? `<div class="input-field rounded-lg px-3 py-2 flex items-center"><span class="material-symbols-outlined text-sm text-on-surface-variant mr-2 w-4">rounded_corner</span><input type="number" step="0.5" min="0" value="${rx}" id="p-rx" placeholder="0" /></div>` : ''}
       </div>
     </div>`;
 
-    html += `<div class="p-section">
+    // Dimensions (W, H) — editable, resizes proportionally
+    html += `<div class="space-y-3 pt-4 border-t ui-border">
+      <div class="flex items-center justify-between"><div class="p-title">Dimensions</div></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="input-field rounded-lg px-3 py-2 flex items-center"><span class="text-on-surface-variant text-[11px] font-mono mr-2 w-4">W</span><input type="number" step="0.1" min="0.5" value="${eff.width.toFixed(2)}" id="p-w" /></div>
+        <div class="input-field rounded-lg px-3 py-2 flex items-center"><span class="text-on-surface-variant text-[11px] font-mono mr-2 w-4">H</span><input type="number" step="0.1" min="0.5" value="${eff.height.toFixed(2)}" id="p-h" /></div>
+      </div>
+    </div>`;
+
+    // Fill
+    html += `<div class="space-y-2 pt-4 border-t ui-border">
       <div class="p-title">Fill</div>
-      <div class="flex items-center gap-2">
-        <div class="p-input-cell" style="flex: 0 0 auto;">
-          <input type="color" value="${fillColor}" id="p-fill-color" ${fillIsCurrent ? 'disabled' : ''} />
-        </div>
-        <div class="p-input-cell" style="flex: 1;">
-          <input type="text" value="${escapeAttr(fill)}" id="p-fill-text" />
-        </div>
+      <div class="input-field rounded-lg px-2 py-1.5 flex items-center gap-2">
+        <input type="color" value="${fillColor}" id="p-fill-color" ${fillIsCurrent ? 'disabled' : ''} />
+        <input type="text" value="${escapeAttr(fill)}" id="p-fill-text" class="flex-1 font-mono text-[11px]" />
       </div>
-      <label class="p-check mt-2"><input type="checkbox" id="p-fill-current" ${fillIsCurrent ? 'checked' : ''} class="accent-accent" /> Use <code class="text-accent">currentColor</code></label>
+      <label class="flex items-center gap-2 text-[11px] text-on-surface-variant cursor-pointer">
+        <input type="checkbox" id="p-fill-current" ${fillIsCurrent ? 'checked' : ''} class="accent-primary" />
+        Use <code class="text-primary font-mono">currentColor</code>
+      </label>
     </div>`;
 
-    html += `<div class="p-section">
+    // Stroke
+    html += `<div class="space-y-2 pt-4 border-t ui-border">
       <div class="p-title">Stroke</div>
-      <div class="flex items-center gap-2 mb-2">
-        <div class="p-input-cell" style="flex: 0 0 auto;">
-          <input type="color" value="${strokeColor}" id="p-stroke-color" ${strokeIsCurrent || !stroke ? 'disabled' : ''} />
-        </div>
-        <div class="p-input-cell" style="flex: 1;">
-          <input type="text" value="${escapeAttr(stroke)}" id="p-stroke" placeholder="none / #hex" />
-        </div>
+      <div class="input-field rounded-lg px-2 py-1.5 flex items-center gap-2">
+        <input type="color" value="${strokeColor}" id="p-stroke-color" ${strokeIsCurrent || !stroke ? 'disabled' : ''} />
+        <input type="text" value="${escapeAttr(stroke)}" id="p-stroke" placeholder="none / #hex" class="flex-1 font-mono text-[11px]" />
       </div>
-      <div class="p-grid-2">
-        <div class="p-input-cell"><span class="k">W</span><input type="number" step="0.1" min="0" value="${strokeWidth}" id="p-stroke-w" /></div>
-        <div class="p-input-cell"><span class="k" title="opacity">α</span><input type="number" step="0.05" min="0" max="1" value="${opacity}" id="p-opacity" /></div>
+      <div class="grid grid-cols-2 gap-3 mt-2">
+        <div class="input-field rounded-lg px-3 py-2 flex items-center"><span class="text-on-surface-variant text-[11px] font-mono mr-2 w-4">W</span><input type="number" step="0.1" min="0" value="${strokeWidth}" id="p-stroke-w" /></div>
+        <div class="input-field rounded-lg px-3 py-2 flex items-center"><span class="material-symbols-outlined text-sm text-on-surface-variant mr-2 w-4">opacity</span><input type="number" step="0.05" min="0" max="1" value="${opacity}" id="p-opacity" /></div>
       </div>
     </div>`;
 
-    html += `<div class="p-section">
+    // Layer order
+    html += `<div class="space-y-3 pt-4 border-t ui-border">
+      <div class="p-title">Layer</div>
+      <div class="grid grid-cols-4 gap-1 p-1 bg-surface-container-lowest rounded-lg border border-outline-variant">
+        <button class="align-btn" id="p-to-back"   title="Send to back"><span class="material-symbols-outlined text-lg">vertical_align_bottom</span></button>
+        <button class="align-btn" id="p-backward"  title="Send backward"><span class="material-symbols-outlined text-lg">arrow_downward</span></button>
+        <button class="align-btn" id="p-forward"   title="Bring forward"><span class="material-symbols-outlined text-lg">arrow_upward</span></button>
+        <button class="align-btn" id="p-to-front"  title="Bring to front"><span class="material-symbols-outlined text-lg">vertical_align_top</span></button>
+      </div>
+    </div>`;
+
+    // Raw transform
+    html += `<div class="space-y-2 pt-4 border-t ui-border">
       <div class="p-title">Transform</div>
-      <div class="p-input-cell mb-2"><span class="k">T</span><input type="text" value="${escapeAttr(transform)}" id="p-transform" placeholder="translate(0,0)" /></div>
-      <button class="p-btn w-full" id="p-clear-t">Clear transform</button>
+      <div class="input-field rounded-lg px-3 py-2 flex items-center"><span class="material-symbols-outlined text-sm text-on-surface-variant mr-2 w-4">transform</span><input type="text" value="${escapeAttr(transform)}" id="p-transform" placeholder="translate(0,0)" class="font-mono text-[11px]" /></div>
+      <button class="w-full py-1.5 bg-surface-container-highest hover:bg-surface-bright rounded-lg text-[11px] font-medium text-on-surface border border-outline-variant" id="p-clear-t">Clear transform</button>
     </div>`;
   } else {
-    html += `<div class="p-section text-gray-500 text-center leading-relaxed">
+    html += `<div class="text-on-surface-variant/60 text-center py-6 leading-relaxed text-[11px]">
       Select a shape on the canvas or in the tree to edit its properties, or pick a draw tool from the palette to create a new shape.
     </div>`;
   }
 
-  // Icon root (always shown)
-  html += `<div class="p-section">
+  // Icon Root — always shown
+  html += `<div class="space-y-3 pt-4 border-t ui-border">
     <div class="p-title">Icon Root</div>
-    <div class="p-input-cell mb-2"><span class="k">t</span><input type="text" value="${escapeAttr(title)}" id="p-icon-title" placeholder="title (accessible name)" /></div>
-    <div class="p-grid-2 mb-2">
-      <div class="p-input-cell"><span class="k">W</span><input type="number" min="1" step="1" value="${width}" id="p-icon-w" /></div>
-      <div class="p-input-cell"><span class="k">H</span><input type="number" min="1" step="1" value="${height}" id="p-icon-h" /></div>
+    <div class="input-field rounded-lg px-3 py-2 flex items-center"><span class="material-symbols-outlined text-sm text-on-surface-variant mr-2 w-4">title</span><input type="text" value="${escapeAttr(title)}" id="p-icon-title" placeholder="accessible title" /></div>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="input-field rounded-lg px-3 py-2 flex items-center"><span class="text-on-surface-variant text-[11px] font-mono mr-2 w-4">W</span><input type="number" min="1" step="1" value="${iw}" id="p-icon-w" /></div>
+      <div class="input-field rounded-lg px-3 py-2 flex items-center"><span class="text-on-surface-variant text-[11px] font-mono mr-2 w-4">H</span><input type="number" min="1" step="1" value="${ih}" id="p-icon-h" /></div>
     </div>
-    <div class="p-input-cell"><span class="k">▭</span><input type="text" value="${escapeAttr(viewBox)}" id="p-icon-vb" placeholder="viewBox (0 0 48 48)" /></div>
+    <div class="input-field rounded-lg px-3 py-2 flex items-center"><span class="material-symbols-outlined text-sm text-on-surface-variant mr-2 w-4">crop_free</span><input type="text" value="${escapeAttr(viewBox)}" id="p-icon-vb" placeholder="0 0 48 48" class="font-mono text-[11px]" /></div>
+  </div>`;
+
+  // Export
+  html += `<div class="space-y-2 pt-4 border-t ui-border">
+    <div class="p-title">Export</div>
+    <div class="grid grid-cols-2 gap-2">
+      <button id="p-copy-svg" class="py-2 bg-surface-container-highest hover:bg-surface-bright rounded-lg text-[11px] font-semibold text-on-surface border border-outline-variant flex items-center justify-center gap-1"><span class="material-symbols-outlined" style="font-size:14px;">content_copy</span>Copy</button>
+      <button id="p-download-svg" class="py-2 bg-surface-container-highest hover:bg-surface-bright rounded-lg text-[11px] font-semibold text-on-surface border border-outline-variant flex items-center justify-center gap-1"><span class="material-symbols-outlined" style="font-size:14px;">download</span>SVG</button>
+    </div>
+    <button id="p-save-json" class="w-full py-2 bg-primary hover:opacity-90 rounded-lg text-[12px] font-semibold text-white flex items-center justify-center gap-1.5"><span class="material-symbols-outlined" style="font-size:16px;">save</span>Save as &lt;category&gt;/&lt;name&gt;.json</button>
   </div>`;
 
   propsEl.innerHTML = html;
+
+  // Alignment buttons
+  propsEl.querySelectorAll('button[data-align]').forEach(b => b.addEventListener('click', () => alignSelection(b.dataset.align)));
 
   // Wire icon-root
   const setSvgAttr = (name, val) => {
@@ -694,13 +926,50 @@ function renderProps() {
   document.getElementById('p-icon-h').addEventListener('input', e => setSvgAttr('height', e.target.value));
   document.getElementById('p-icon-vb').addEventListener('input', e => setSvgAttr('viewBox', e.target.value));
 
-  // Wire header action buttons
-  document.getElementById('p-to-front').addEventListener('click', bringToFront);
-  document.getElementById('p-to-back').addEventListener('click', sendToBack);
-  document.getElementById('p-duplicate').addEventListener('click', duplicateSelection);
-  document.getElementById('p-remove').addEventListener('click', deleteSelection);
+  // Wire header action buttons (only present when a shape is selected)
+  document.getElementById('p-duplicate')?.addEventListener('click', duplicateSelection);
+  document.getElementById('p-remove')?.addEventListener('click', deleteSelection);
+
+  // Export buttons (always present)
+  document.getElementById('p-copy-svg')?.addEventListener('click', () => copyBtn.click());
+  document.getElementById('p-download-svg')?.addEventListener('click', downloadSvgFile);
+  document.getElementById('p-save-json')?.addEventListener('click', openSaveDialog);
 
   if (!target) return;
+
+  // Layer order buttons (only present when selected)
+  document.getElementById('p-to-front')?.addEventListener('click', bringToFront);
+  document.getElementById('p-to-back')?.addEventListener('click', sendToBack);
+  document.getElementById('p-forward')?.addEventListener('click', bringForward);
+  document.getElementById('p-backward')?.addEventListener('click', sendBackward);
+
+  // W/H dimension inputs — resize the selection to the target dimensions
+  const wEl = document.getElementById('p-w');
+  const hEl = document.getElementById('p-h');
+  if (wEl && hEl) {
+    const commit = () => {
+      const w = parseFloat(wEl.value); const h = parseFloat(hEl.value);
+      if (!isFinite(w) || !isFinite(h) || w <= 0 || h <= 0) return;
+      resizeToDimensions(w, h);
+    };
+    wEl.addEventListener('change', commit);
+    hEl.addEventListener('change', commit);
+  }
+
+  // Corner radius (rect only)
+  const rxEl = document.getElementById('p-rx');
+  rxEl?.addEventListener('focus', markBaseline);
+  rxEl?.addEventListener('change', commitIfChanged);
+  rxEl?.addEventListener('input', e => {
+    const v = e.target.value;
+    if (v === '' || +v === 0) { target.removeAttribute('rx'); target.removeAttribute('ry'); }
+    else { target.setAttribute('rx', v); target.setAttribute('ry', v); }
+    const live = currentCanvasSvg()?.querySelector(`[data-idx="${state.selectedEl}"]`);
+    if (live) {
+      if (v === '' || +v === 0) { live.removeAttribute('rx'); live.removeAttribute('ry'); }
+      else { live.setAttribute('rx', v); live.setAttribute('ry', v); }
+    }
+  });
 
   const setAttr = (name, val) => {
     if (val === '' || val == null) target.removeAttribute(name); else target.setAttribute(name, val);
@@ -744,12 +1013,16 @@ function renderProps() {
 }
 
 // ---- Toolbar ----
-zoomEl.addEventListener('input', e => {
-  state.zoom = +e.target.value;
-  zoomLabel.textContent = `${Math.round(state.zoom * 100)}%`;
+function setZoom(z) {
+  state.zoom = Math.max(1, Math.min(12, z));
+  const pct = `${Math.round(state.zoom * 100)}%`;
+  zoomLabel.textContent = pct;
+  if (zoomDisplay) zoomDisplay.textContent = pct;
   mountCanvas();
-});
-zoomLabel.textContent = `${Math.round(state.zoom * 100)}%`;
+}
+zoomInBtn?.addEventListener('click', () => setZoom(state.zoom + 1));
+zoomOutBtn?.addEventListener('click', () => setZoom(state.zoom - 1));
+setZoom(state.zoom);
 resetBtn.addEventListener('click', () => { if (state.selectedIcon) loadIntoStudio({ ...state.selectedIcon, svg: state.original }); });
 centerBtn.addEventListener('click', () => withEdit(() => {
   if (state.selectedEl === null) return;
@@ -778,7 +1051,7 @@ copyBtn.addEventListener('click', async () => {
   await navigator.clipboard.writeText(svg);
   showToast('Copied SVG');
 });
-downloadBtn.addEventListener('click', () => {
+function downloadSvgFile() {
   const svg = serializeStudio();
   if (!svg) return;
   const blob = new Blob([svg], { type: 'image/svg+xml' });
@@ -788,7 +1061,110 @@ downloadBtn.addEventListener('click', () => {
   a.download = `${state.selectedIcon?.name || 'icon'}.svg`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+// ---- Save as JSON (matches repo's <category>/<name>.json format) ----
+const saveDialog = document.getElementById('save-dialog');
+const saveName = document.getElementById('save-name');
+const saveCat = document.getElementById('save-category');
+const saveNewCatWrap = document.getElementById('save-new-cat-wrap');
+const saveNewCat = document.getElementById('save-new-cat');
+const savePreview = document.getElementById('save-preview-path');
+const saveConfirm = document.getElementById('save-confirm');
+
+function openSaveDialog() {
+  if (!state.svgDoc) { showToast('Load an icon first'); return; }
+
+  // Build category list from what we know about the repo.
+  saveCat.innerHTML = '';
+  const cats = new Set(
+    state.categories.map(c => c.name).filter(n => n && n !== 'custom')
+  );
+  // Sensible defaults so an empty repo still offers targets.
+  cats.add('brands');
+  cats.add('regular');
+  for (const cat of Array.from(cats).sort()) {
+    const opt = document.createElement('option');
+    opt.value = cat;
+    opt.textContent = cat;
+    saveCat.appendChild(opt);
+  }
+  const newOpt = document.createElement('option');
+  newOpt.value = '__new__';
+  newOpt.textContent = '+ New category…';
+  saveCat.appendChild(newOpt);
+
+  // Sensible defaults.
+  const cur = state.selectedIcon;
+  let defaultName = cur?.name || '';
+  if (/^untitled-\d+$/.test(defaultName)) defaultName = '';
+  saveName.value = defaultName;
+  if (cur?.category && cats.has(cur.category)) saveCat.value = cur.category;
+  else saveCat.value = 'brands';
+  saveNewCatWrap.classList.add('hidden');
+  saveNewCat.value = '';
+
+  updateSavePreview();
+  saveDialog.showModal();
+  saveName.focus();
+  saveName.select?.();
+}
+
+function updateSavePreview() {
+  const name = (saveName.value || '').trim() || 'icon';
+  const cat = saveCat.value === '__new__'
+    ? (saveNewCat.value || '').trim() || 'category'
+    : saveCat.value;
+  savePreview.textContent = `${cat}/${name}.json`;
+}
+saveName.addEventListener('input', updateSavePreview);
+saveNewCat.addEventListener('input', updateSavePreview);
+saveCat.addEventListener('change', () => {
+  const isNew = saveCat.value === '__new__';
+  saveNewCatWrap.classList.toggle('hidden', !isNew);
+  if (isNew) saveNewCat.focus();
+  updateSavePreview();
 });
+
+function validateSlug(s) { return /^[a-z0-9][a-z0-9-]*$/.test(s); }
+
+saveConfirm.addEventListener('click', () => {
+  const name = (saveName.value || '').trim().toLowerCase();
+  const cat = (saveCat.value === '__new__'
+    ? (saveNewCat.value || '').trim().toLowerCase()
+    : saveCat.value);
+  if (!validateSlug(name)) { showToast('Invalid name (a-z, 0-9, hyphens)'); saveName.focus(); return; }
+  if (!validateSlug(cat)) { showToast('Invalid category name'); (saveCat.value === '__new__' ? saveNewCat : saveCat).focus(); return; }
+
+  const svgContent = serializeStudio();
+  if (!svgContent) return;
+  const json = {
+    name,
+    files: [{ path: `${name}.svg`, content: svgContent }],
+  };
+  const body = JSON.stringify(json, null, 2) + '\n';
+  const blob = new Blob([body], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${name}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  // Also persist to the session's custom library.
+  const custom = loadCustomIcons();
+  const idx = custom.findIndex(c => c.name === name);
+  if (idx >= 0) custom[idx] = { name, svg: svgContent };
+  else custom.push({ name, svg: svgContent });
+  saveCustomIcons(custom);
+
+  saveDialog.close();
+  showToast(`Saved ${cat}/${name}.json`);
+});
+
+// Top "Export" opens the save dialog; a plain .svg download stays available
+// via the props panel button below.
+downloadBtn.addEventListener('click', openSaveDialog);
 
 // ---- New icon ----
 function createNewIcon() {
@@ -811,6 +1187,7 @@ function createNewIcon() {
   showToast(`Created ${name}`);
 }
 newBtn.addEventListener('click', createNewIcon);
+newBtnSm?.addEventListener('click', createNewIcon);
 
 // Re-position handles when the window resizes
 window.addEventListener('resize', renderHandles);
