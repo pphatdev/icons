@@ -28,8 +28,39 @@ const PAGE_ROUTES: Record<string, string> = {
     '/graph/': 'graph.html',
 };
 
+const SLUG = /^[a-z0-9][a-z0-9-]*$/;
+
 const server = http.createServer((req, res) => {
     const url = decodeURIComponent((req.url ?? '/').split('?')[0]);
+
+    // POST /api/save — writes <repo-root>/<category>/<name>.json
+    if (req.method === 'POST' && url === '/api/save') {
+        let body = '';
+        req.on('data', chunk => (body += chunk));
+        req.on('end', () => {
+            try {
+                const { category, name, content } = JSON.parse(body || '{}');
+                if (typeof category !== 'string' || typeof name !== 'string' || typeof content !== 'string') {
+                    return send(res, 400, 'application/json', JSON.stringify({ error: 'category, name, and content are required strings' }));
+                }
+                if (!SLUG.test(name) || !SLUG.test(category)) {
+                    return send(res, 400, 'application/json', JSON.stringify({ error: 'Invalid slug (a-z, 0-9, hyphens)' }));
+                }
+                const dir = path.join(REPO_ROOT, category);
+                const file = path.join(dir, `${name}.json`);
+                // Path traversal guard: resolved path must stay inside REPO_ROOT.
+                if (!file.startsWith(REPO_ROOT + path.sep) && file !== REPO_ROOT) {
+                    return send(res, 403, 'application/json', JSON.stringify({ error: 'Forbidden path' }));
+                }
+                fs.mkdirSync(dir, { recursive: true });
+                fs.writeFileSync(file, content);
+                send(res, 200, 'application/json', JSON.stringify({ ok: true, path: `${category}/${name}.json` }));
+            } catch (err) {
+                send(res, 500, 'application/json', JSON.stringify({ error: String((err as Error)?.message ?? err) }));
+            }
+        });
+        return;
+    }
 
     // Root → redirect to /browse
     if (url === '/' || url === '') {

@@ -30,7 +30,7 @@ function renderGraph(icons, categories) {
   const maxCat = Math.max(...catEntries.map(e => e[1]), 1);
   document.getElementById('g-cat-bars').innerHTML = catEntries.map(([n, c]) =>
     `<div class="bar-row"><span>${n}</span><div class="bar" style="width: ${(c / maxCat * 100).toFixed(1)}%;"></div><span class="count">${c}</span></div>`
-  ).join('') || '<div class="empty">No data</div>';
+  ).join('') || '<div class="text-on-surface-variant/60 text-center py-4">No data</div>';
 
   // Complexity buckets
   const buckets = { '1': 0, '2-3': 0, '4-6': 0, '7-10': 0, '11-20': 0, '20+': 0 };

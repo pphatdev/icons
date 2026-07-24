@@ -50,6 +50,55 @@
 <style>
   body { background: #0a0a0a; color: #e1e1e1; height: 100vh; overflow: hidden; font-size: 12px; font-family: 'Inter', sans-serif; }
   .ui-border { border-color: #2a2a2a; }
+
+  /* Reset default browser form-control chrome. Focus is indicated by the
+     `.input-field:focus-within` border-color change or by custom rules
+     below — never by the browser's default blue ring. */
+  input, textarea, select, button {
+    outline: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+  input:focus, textarea:focus, select:focus, button:focus,
+  input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+  /* Number input spinners */
+  input[type="number"] { -moz-appearance: textfield; }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  /* Search input: hide the WebKit cancel button */
+  input[type="search"]::-webkit-search-cancel-button,
+  input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; }
+  /* Color input: strip default padding/border so our container styles it */
+  input[type="color"] { padding: 0; border: none; background: transparent; cursor: pointer; }
+  input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+  input[type="color"]::-webkit-color-swatch { border: 1px solid #2a2a2a; border-radius: 3px; }
+  input[type="color"]::-moz-color-swatch { border: 1px solid #2a2a2a; border-radius: 3px; }
+  /* Select: drop native arrow, add our own */
+  select {
+    padding-right: 22px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23a1a1a1' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+  }
+  select::-ms-expand { display: none; }
+  /* Range slider */
+  input[type="range"] { background: transparent; cursor: pointer; }
+  input[type="range"]::-webkit-slider-runnable-track { height: 4px; background: #2a2a2a; border-radius: 2px; }
+  input[type="range"]::-moz-range-track { height: 4px; background: #2a2a2a; border-radius: 2px; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: #0d99ff; border-radius: 50%; margin-top: -4px; border: none; }
+  input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; background: #0d99ff; border-radius: 50%; border: none; }
+  /* Autofill dark override */
+  input:-webkit-autofill { -webkit-text-fill-color: #e1e1e1; -webkit-box-shadow: 0 0 0 1000px #161616 inset; }
+  /* Preserve pointer cursor on interactive buttons */
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
   .scrollbar-hide { scrollbar-width: none; }
   .canvas-grid { background-image: radial-gradient(#2a2a2a 1px, transparent 1px); background-size: 24px 24px; }
@@ -74,6 +123,11 @@
   #handles .handle { position: absolute; width: 10px; height: 10px; background: white; border: 1px solid #0d99ff; border-radius: 2px; transform: translate(-50%, -50%); pointer-events: auto; z-index: 5; box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
   .handle[data-corner="tl"], .handle[data-corner="br"] { cursor: nwse-resize; }
   .handle[data-corner="tr"], .handle[data-corner="bl"] { cursor: nesw-resize; }
+  /* Path-anchor dots (node-edit mode) — use `#handles .anchor` so the same
+     specificity pattern as `.handle` reliably beats `pointer-events: none`
+     on the overlay container. */
+  #handles .anchor { position: absolute; width: 10px; height: 10px; background: #0d99ff; border: 1.5px solid white; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: auto; z-index: 6; cursor: move; box-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+  #handles .anchor:hover { background: white; border-color: #0d99ff; transform: translate(-50%, -50%) scale(1.4); }
   .m-label { position: absolute; background: #0d99ff; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-family: 'JetBrains Mono', monospace; font-weight: 700; transform: translate(-50%, 0); z-index: 5; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
 
   /* Toast */
@@ -114,6 +168,20 @@
   /* Align toolbar buttons */
   .align-btn { padding: 6px; display: flex; align-items: center; justify-content: center; border-radius: 6px; color: #a1a1a1; cursor: pointer; background: transparent; border: none; }
   .align-btn:hover { background: #333; color: #e1e1e1; }
+
+  /* Quick-actions popover buttons */
+  #quick-actions { pointer-events: auto; }
+  .qa-btn { position: relative; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 4px; color: rgba(255,255,255,0.7); cursor: pointer; background: transparent; border: none; }
+  .qa-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+  .qa-btn.active { background: #0d99ff; color: white; }
+
+  /* Color swatches */
+  .swatch, .preview-swatch { width: 18px; height: 18px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.12); cursor: pointer; padding: 0; background-color: currentColor; transition: transform .1s, border-color .1s; flex-shrink: 0; }
+  .swatch:hover, .preview-swatch:hover { transform: scale(1.15); border-color: #0d99ff; }
+  .swatch.active, .preview-swatch.active { border-color: #0d99ff; box-shadow: 0 0 0 1px #0d99ff; }
+  .swatch.none, .preview-swatch.none { background: linear-gradient(135deg, transparent calc(50% - 1px), #ef4444 calc(50% - 1px), #ef4444 calc(50% + 1px), transparent calc(50% + 1px)), repeating-conic-gradient(#333 0% 25%, #444 0% 50%) 50% / 6px 6px; }
+  .swatch.current, .preview-swatch.current { background: conic-gradient(from 180deg at 50% 50%, #ef4444 0deg, #eab308 60deg, #22c55e 120deg, #3b82f6 180deg, #a855f7 240deg, #ec4899 300deg, #ef4444 360deg); }
+  .preview-swatch { width: 16px; height: 16px; }
 </style>
 </head>
 <body class="flex flex-col bg-surface">
@@ -143,23 +211,31 @@
 <div class="flex flex-1 overflow-hidden">
   <!-- Left sidebar -->
   <aside class="w-64 border-r ui-border flex bg-surface-container-low z-10 flex-shrink-0">
-    <div class="w-14 border-r ui-border flex flex-col items-center py-4 space-y-3 bg-surface-container-lowest">
+    <div class="w-14 border-r ui-border flex flex-col items-center py-3 space-y-1 bg-surface-container-lowest">
+      <!-- Page nav (Browse / Studio / Graph) -->
+      <a href="/browse" class="rail-btn" title="Browse all icons">
+        <span class="material-symbols-outlined">grid_view</span>
+        <span class="lbl">Browse</span>
+      </a>
+      <a href="/studio" class="rail-btn active" title="Studio (current)">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">edit</span>
+        <span class="lbl">Studio</span>
+      </a>
+      <a href="/graph" class="rail-btn" title="Registry metrics">
+        <span class="material-symbols-outlined">insights</span>
+        <span class="lbl">Graph</span>
+      </a>
+      <div class="w-6 border-t ui-border my-2"></div>
+      <!-- Studio actions -->
       <button id="new-icon" class="rail-btn" title="Create new icon">
         <span class="material-symbols-outlined">add</span>
         <span class="lbl">New</span>
-      </button>
-      <button class="rail-btn active" title="Layers (icon list)">
-        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">description</span>
-        <span class="lbl">Layers</span>
       </button>
       <button id="reset" class="rail-btn" title="Reset icon">
         <span class="material-symbols-outlined">refresh</span>
         <span class="lbl">Reset</span>
       </button>
       <div class="flex-1"></div>
-      <a href="/graph" class="rail-btn" title="Graph metrics">
-        <span class="material-symbols-outlined">insights</span>
-      </a>
     </div>
     <div class="flex-1 flex flex-col bg-surface-container-low overflow-hidden">
       <div class="p-3 border-b ui-border">
@@ -181,15 +257,54 @@
   <!-- Canvas -->
   <main class="flex-1 relative bg-surface-container-lowest overflow-hidden canvas-grid">
     <div class="absolute top-3 left-3 text-[11px] text-on-surface-variant/60 font-medium tracking-wide uppercase z-10" id="canvas-label"></div>
-    <button id="center" class="absolute top-3 right-3 text-[11px] px-2 py-1 rounded-lg glass-panel text-on-surface-variant hover:text-on-surface border border-white/5 z-10" title="Clear transform on selection">
-      <span class="material-symbols-outlined text-sm align-middle">crop_free</span>
-      <span class="ml-1">Center</span>
-    </button>
+
+    <!-- Preview color: changes how `currentColor` renders on the canvas.
+         This is a preview-only setting; the SVG source is unaffected. -->
+    <div class="absolute top-3 right-3 flex items-center gap-2 z-10">
+      <div class="flex items-center gap-1 glass-panel border border-white/5 rounded-lg px-2 py-1">
+        <span class="text-[10px] text-on-surface-variant/70 font-medium">Preview</span>
+        <button class="preview-swatch" data-preview="#e1e1e1" title="Default"></button>
+        <button class="preview-swatch" data-preview="#ffffff" title="White"></button>
+        <button class="preview-swatch" data-preview="#000000" title="Black"></button>
+        <button class="preview-swatch" data-preview="#0d99ff" title="Blue"></button>
+        <button class="preview-swatch" data-preview="#22c55e" title="Green"></button>
+        <button class="preview-swatch" data-preview="#ef4444" title="Red"></button>
+        <input id="preview-color" type="color" value="#e1e1e1" title="Custom preview color" class="w-6 h-6 rounded cursor-pointer bg-transparent border border-white/10 p-0" />
+      </div>
+      <button id="center" class="text-[11px] px-2 py-1 rounded-lg glass-panel text-on-surface-variant hover:text-on-surface border border-white/5" title="Clear transform on selection">
+        <span class="material-symbols-outlined text-sm align-middle">crop_free</span>
+      </button>
+    </div>
 
     <div class="absolute inset-0 flex items-center justify-center">
       <div class="relative" id="canvas-wrap">
         <div id="canvas-host"></div>
         <div id="handles" class="absolute inset-0 pointer-events-none"></div>
+        <!-- Floating quick-edit popover for the selected shape -->
+        <div id="quick-actions" class="absolute glass-panel border border-white/10 rounded-lg shadow-2xl px-1.5 py-1 flex items-center gap-1 z-10 hidden">
+          <label class="qa-btn" title="Fill color">
+            <span class="material-symbols-outlined" style="font-size:16px;">format_color_fill</span>
+            <input type="color" id="qa-fill" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+          </label>
+          <label class="qa-btn" title="Stroke color">
+            <span class="material-symbols-outlined" style="font-size:16px;">border_color</span>
+            <input type="color" id="qa-stroke" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+          </label>
+          <div class="flex items-center bg-white/5 border border-white/10 rounded px-1.5 h-6 gap-1" title="Stroke width">
+            <span class="material-symbols-outlined text-white/60" style="font-size:12px;">line_weight</span>
+            <input type="number" id="qa-stroke-w" min="0" step="0.5" placeholder="0" class="w-8 bg-transparent border-none outline-none text-[11px] text-white font-mono p-0" />
+          </div>
+          <div class="w-px h-4 bg-white/10 mx-0.5"></div>
+          <button class="qa-btn hidden" id="qa-edit-path" title="Edit path points (Enter)">
+            <span class="material-symbols-outlined" style="font-size:16px;">edit_note</span>
+          </button>
+          <button class="qa-btn" id="qa-duplicate" title="Duplicate (Ctrl+D)">
+            <span class="material-symbols-outlined" style="font-size:16px;">content_copy</span>
+          </button>
+          <button class="qa-btn text-red-400 hover:text-red-300" id="qa-delete" title="Delete">
+            <span class="material-symbols-outlined" style="font-size:16px;">delete</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -242,19 +357,11 @@
 
   <!-- Right sidebar -->
   <aside class="w-72 border-l ui-border flex flex-col bg-surface-container-low z-10 flex-shrink-0">
-    <nav class="flex items-center border-b ui-border bg-surface-container-low px-2 flex-shrink-0 h-11 gap-0.5">
-      <a href="/browse" class="px-3 py-1.5 text-[11px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded transition-colors flex items-center gap-1.5">
-        <span class="material-symbols-outlined" style="font-size:14px;">grid_view</span>Browse
-      </a>
-      <a href="/studio" class="px-3 py-1.5 text-[11px] font-semibold text-primary bg-primary/10 rounded flex items-center gap-1.5">
-        <span class="material-symbols-outlined" style="font-size:14px;">edit</span>Studio
-      </a>
-      <a href="/graph" class="px-3 py-1.5 text-[11px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded transition-colors flex items-center gap-1.5">
-        <span class="material-symbols-outlined" style="font-size:14px;">insights</span>Graph
-      </a>
+    <div class="flex items-center border-b ui-border bg-surface-container-low px-3 flex-shrink-0 h-11">
+      <span class="text-xs text-on-surface font-semibold">Design</span>
       <div class="flex-1"></div>
-      <div id="zoom-display" class="text-on-surface-variant text-[11px] font-mono opacity-60 pr-1">400%</div>
-    </nav>
+      <div id="zoom-display" class="text-on-surface-variant text-[11px] font-mono opacity-60">400%</div>
+    </div>
     <div id="props" class="overflow-y-auto scrollbar-hide flex-1 p-4 space-y-5"></div>
     <div class="border-t ui-border p-4 flex-shrink-0">
       <div class="flex items-center justify-between mb-2">
@@ -301,14 +408,14 @@
       </div>
     </div>
     <div class="text-[11px] text-on-surface-variant bg-surface-container-lowest rounded-lg px-3 py-2 border border-outline-variant">
-      <div class="flex items-center gap-1.5 mb-1"><span class="material-symbols-outlined text-sm text-primary">download</span><span class="font-semibold">Will download:</span></div>
+      <div class="flex items-center gap-1.5 mb-1"><span class="material-symbols-outlined text-sm text-primary">save</span><span class="font-semibold">Writes directly to:</span></div>
       <code class="text-primary font-mono text-[11px]" id="save-preview-path">brands/my-icon.json</code>
-      <div class="text-on-surface-variant/60 mt-1.5 text-[10px]">Drop this file into the matching folder in the repo, then commit &mdash; the GitHub Action will regenerate <code class="font-mono">&lt;category&gt;.json</code> and <code class="font-mono">index.json</code>.</div>
+      <div class="text-on-surface-variant/60 mt-1.5 text-[10px]">Saved via the local demo server. Commit and push &mdash; the GitHub Action will regenerate <code class="font-mono">&lt;category&gt;.json</code> and <code class="font-mono">index.json</code>. If the server can't write, the browser will download the file instead.</div>
     </div>
   </div>
   <div class="p-4 border-t ui-border flex justify-end gap-2">
     <button onclick="document.getElementById('save-dialog').close()" class="px-3 py-1.5 rounded-lg text-[11px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest">Cancel</button>
-    <button id="save-confirm" class="px-4 py-1.5 rounded-lg bg-primary text-white text-[11px] font-semibold hover:opacity-90">Save &amp; Download</button>
+    <button id="save-confirm" class="px-4 py-1.5 rounded-lg bg-primary text-white text-[11px] font-semibold hover:opacity-90 disabled:opacity-50">Save to Repo</button>
   </div>
 </dialog>
 

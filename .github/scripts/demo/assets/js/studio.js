@@ -63,6 +63,17 @@ function setTranslate(el, x, y) {
   el.setAttribute('transform', stripped ? `${t} ${stripped}` : t);
 }
 function clientToSvg(svg, x, y) {
+  // Use the SVG's own inverse matrix so it correctly handles viewBox +
+  // preserveAspectRatio. A naive rect.width interpolation is wrong when the
+  // icon's aspect differs from its container (letterboxing).
+  const ctm = svg.getScreenCTM();
+  if (ctm) {
+    const pt = svg.createSVGPoint();
+    pt.x = x; pt.y = y;
+    const p = pt.matrixTransform(ctm.inverse());
+    return { x: p.x, y: p.y };
+  }
+  // Fallback (should never happen — kept for safety on very old browsers)
   const rect = svg.getBoundingClientRect();
   const vb = (svg.getAttribute('viewBox') || `0 0 ${svg.getAttribute('width')} ${svg.getAttribute('height')}`).split(/\s+/).map(Number);
   const [vx, vy, vw, vh] = vb;
@@ -125,13 +136,29 @@ function mountCanvas() {
   canvasHost.innerHTML = '';
   if (!state.svgDoc) return;
   const svg = state.svgDoc.cloneNode(true);
-  const size = 48 * state.zoom;
-  svg.setAttribute('width', size);
-  svg.setAttribute('height', size);
+  // Preview uses the icon's own intrinsic dimensions, scaled by zoom.
+  // Falls back to viewBox size, then 48, if width/height are missing.
+  const vb = (state.svgDoc.getAttribute('viewBox') || '').split(/\s+/).map(Number);
+  const srcW = parseFloat(state.svgDoc.getAttribute('width')) || vb[2] || 48;
+  const srcH = parseFloat(state.svgDoc.getAttribute('height')) || vb[3] || 48;
+  svg.setAttribute('width', srcW * state.zoom);
+  svg.setAttribute('height', srcH * state.zoom);
   svg.setAttribute('id', 'canvas');
   svg.querySelectorAll('[data-shape]').forEach(el => el.addEventListener('pointerdown', onShapePointerDown));
   svg.addEventListener('pointerdown', onCanvasPointerDown);
+  // Double-click on a <path> enters node-edit mode (Figma-style).
+  svg.addEventListener('dblclick', (e) => {
+    const target = e.target.closest('[data-shape]');
+    if (!target || target.tagName.toLowerCase() !== 'path') return;
+    const idx = target.getAttribute('data-idx');
+    selectElement(idx);
+    state.editingPath = true;
+    qaEditPath?.classList.add('active');
+    qaEditPath?.classList.remove('hidden');
+    renderHandles();
+  });
   canvasHost.appendChild(svg);
+  if (state.previewColor) svg.style.color = state.previewColor;
   applySelection();
   updateCanvasCursor();
   renderHandles();
@@ -141,6 +168,23 @@ function updateCanvasCursor() {
   const svg = currentCanvasSvg();
   if (svg) svg.style.cursor = state.tool === 'select' ? 'default' : 'crosshair';
 }
+
+// ---- Preview color (affects `currentColor` on canvas only, not the source) ----
+const PALETTE = ['none', 'currentColor', '#000000', '#ffffff', '#808080', '#ef4444', '#f97316', '#eab308', '#22c55e', '#0d99ff', '#a855f7', '#ec4899'];
+const previewColorInput = document.getElementById('preview-color');
+state.previewColor = '#e1e1e1';
+function applyPreviewColor(hex) {
+  state.previewColor = hex;
+  const svg = currentCanvasSvg();
+  if (svg) svg.style.color = hex;
+  previewColorInput.value = hex;
+  document.querySelectorAll('.preview-swatch[data-preview]').forEach(b => b.classList.toggle('active', b.dataset.preview === hex));
+}
+document.querySelectorAll('.preview-swatch[data-preview]').forEach(b => {
+  b.style.background = b.dataset.preview;
+  b.addEventListener('click', () => applyPreviewColor(b.dataset.preview));
+});
+previewColorInput?.addEventListener('input', e => applyPreviewColor(e.target.value));
 
 function selectElement(idx) {
   state.selectedEl = idx;
@@ -157,18 +201,264 @@ function applySelection() {
   });
 }
 
+// ---- Floating quick-action popover ----
+const qaEl = document.getElementById('quick-actions');
+const qaFill = document.getElementById('qa-fill');
+const qaStroke = document.getElementById('qa-stroke');
+const qaStrokeW = document.getElementById('qa-stroke-w');
+const qaEditPath = document.getElementById('qa-edit-path');
+const qaDup = document.getElementById('qa-duplicate');
+const qaDel = document.getElementById('qa-delete');
+state.editingPath = false;
+function positionQuickActions(left, top, right) {
+  if (!qaEl) return;
+  const centerX = (left + right) / 2;
+  qaEl.style.left = centerX + 'px';
+  qaEl.style.top = (top - 38) + 'px';
+  qaEl.style.transform = 'translateX(-50%)';
+  qaEl.classList.remove('hidden');
+}
+function hideQuickActions() { qaEl?.classList.add('hidden'); }
+function syncQuickActionsFromSelection() {
+  if (state.selectedEl === null || !state.svgDoc) return;
+  const el = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
+  if (!el) return;
+  const f = el.getAttribute('fill') || 'currentColor';
+  const s = el.getAttribute('stroke') || '';
+  const sw = el.getAttribute('stroke-width') || '';
+  if (qaFill) qaFill.value = /^#[0-9a-fA-F]{6,8}$/.test(f) ? f.slice(0, 7) : '#0d99ff';
+  if (qaStroke) qaStroke.value = /^#[0-9a-fA-F]{6,8}$/.test(s) ? s.slice(0, 7) : '#000000';
+  if (qaStrokeW && document.activeElement !== qaStrokeW) qaStrokeW.value = sw;
+}
+qaFill?.addEventListener('change', e => {
+  if (state.selectedEl === null) return;
+  const el = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
+  if (!el) return;
+  withEdit(() => {
+    el.setAttribute('fill', e.target.value);
+    const live = currentCanvasSvg()?.querySelector(`[data-idx="${state.selectedEl}"]`);
+    if (live) live.setAttribute('fill', e.target.value);
+    renderProps();
+  });
+});
+qaStroke?.addEventListener('change', e => {
+  if (state.selectedEl === null) return;
+  const el = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
+  if (!el) return;
+  withEdit(() => {
+    el.setAttribute('stroke', e.target.value);
+    const live = currentCanvasSvg()?.querySelector(`[data-idx="${state.selectedEl}"]`);
+    if (live) live.setAttribute('stroke', e.target.value);
+    renderProps();
+  });
+});
+// Live preview during typing, commit on change (blur/Enter)
+qaStrokeW?.addEventListener('focus', markBaseline);
+qaStrokeW?.addEventListener('input', e => {
+  if (state.selectedEl === null) return;
+  const el = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
+  if (!el) return;
+  const v = e.target.value;
+  if (v === '' || v == null) el.removeAttribute('stroke-width');
+  else el.setAttribute('stroke-width', v);
+  const live = currentCanvasSvg()?.querySelector(`[data-idx="${state.selectedEl}"]`);
+  if (live) {
+    if (v === '' || v == null) live.removeAttribute('stroke-width');
+    else live.setAttribute('stroke-width', v);
+  }
+});
+qaStrokeW?.addEventListener('change', commitIfChanged);
+
+qaDup?.addEventListener('click', () => duplicateSelection());
+qaDel?.addEventListener('click', () => deleteSelection());
+
+// ---- Path node-edit mode ----
+qaEditPath?.addEventListener('click', () => togglePathEdit());
+function togglePathEdit() {
+  if (state.selectedEl === null) return;
+  const el = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
+  if (!el || el.tagName.toLowerCase() !== 'path') return;
+  state.editingPath = !state.editingPath;
+  qaEditPath?.classList.toggle('active', state.editingPath);
+  renderHandles();
+}
+
+// SVG path parser: returns commands as {cmd, args}. Handles all standard
+// commands (M L H V C S Q T A Z, absolute + relative) and normalizes to
+// absolute for edits. We keep the ORIGINAL command letters on serialize
+// unless we've mutated numeric values (then we always emit absolute).
+function parsePathData(d) {
+  const tokens = [];
+  const re = /([MmLlHhVvCcSsQqTtAaZz])|(-?\d*\.?\d+(?:[eE][-+]?\d+)?)/g;
+  let m;
+  while ((m = re.exec(d)) !== null) {
+    if (m[1]) tokens.push({ t: 'c', v: m[1] });
+    else tokens.push({ t: 'n', v: parseFloat(m[2]) });
+  }
+  const cmds = [];
+  let i = 0;
+  let cur = null;
+  const argsFor = { M: 2, L: 2, H: 1, V: 1, C: 6, S: 4, Q: 4, T: 2, A: 7, Z: 0 };
+  while (i < tokens.length) {
+    if (tokens[i].t === 'c') { cur = tokens[i].v; i++; if (cur === 'Z' || cur === 'z') { cmds.push({ cmd: cur, args: [] }); cur = null; continue; } }
+    if (!cur) { i++; continue; }
+    const n = argsFor[cur.toUpperCase()];
+    if (n == null) { i++; continue; }
+    const args = [];
+    for (let k = 0; k < n && i < tokens.length && tokens[i].t === 'n'; k++) args.push(tokens[i++].v);
+    if (args.length !== n) break;
+    cmds.push({ cmd: cur, args });
+    // Per SVG spec: implicit repeat of M becomes L (m becomes l).
+    if (cur === 'M') cur = 'L';
+    else if (cur === 'm') cur = 'l';
+  }
+  return cmds;
+}
+function absolutize(cmds) {
+  let x = 0, y = 0, sx = 0, sy = 0;
+  const out = [];
+  for (const c of cmds) {
+    const isAbs = c.cmd === c.cmd.toUpperCase();
+    let CMD = c.cmd.toUpperCase();
+    let args = c.args.slice();
+    if (!isAbs) {
+      switch (CMD) {
+        case 'M': case 'L': case 'T': args[0] += x; args[1] += y; break;
+        case 'H': args[0] += x; break;
+        case 'V': args[0] += y; break;
+        case 'C': args[0] += x; args[1] += y; args[2] += x; args[3] += y; args[4] += x; args[5] += y; break;
+        case 'S': case 'Q': args[0] += x; args[1] += y; args[2] += x; args[3] += y; break;
+        case 'A': args[5] += x; args[6] += y; break;
+      }
+    }
+    // Normalize H/V to L so every anchor is fully independent. Otherwise the
+    // implicit "inherit y from previous point" behaviour of H (and x for V)
+    // would cause other anchors to visually shift when the user drags the
+    // preceding anchor.
+    if (CMD === 'H') { CMD = 'L'; args = [args[0], y]; }
+    else if (CMD === 'V') { CMD = 'L'; args = [x, args[0]]; }
+    switch (CMD) {
+      case 'M': x = args[0]; y = args[1]; sx = x; sy = y; break;
+      case 'L': case 'T': x = args[0]; y = args[1]; break;
+      case 'C': x = args[4]; y = args[5]; break;
+      case 'S': case 'Q': x = args[2]; y = args[3]; break;
+      case 'A': x = args[5]; y = args[6]; break;
+      case 'Z': x = sx; y = sy; break;
+    }
+    out.push({ cmd: CMD, args });
+  }
+  return out;
+}
+function serializePathData(cmds) {
+  return cmds.map(c => c.cmd + (c.args.length ? ' ' + c.args.map(v => Number(v.toFixed(3)).toString()).join(' ') : '')).join(' ');
+}
+// Return one anchor per drawn segment (end point). Ignores control points for now.
+function extractPathAnchors(cmds) {
+  let px = 0, py = 0, sx = 0, sy = 0;
+  const anchors = [];
+  cmds.forEach((c, i) => {
+    let ax = null, ay = null, xi = null, yi = null;
+    switch (c.cmd) {
+      case 'M': case 'L': case 'T': ax = c.args[0]; ay = c.args[1]; xi = 0; yi = 1; break;
+      case 'H': ax = c.args[0]; ay = py; xi = 0; yi = null; break;
+      case 'V': ax = px; ay = c.args[0]; xi = null; yi = 0; break;
+      case 'C': ax = c.args[4]; ay = c.args[5]; xi = 4; yi = 5; break;
+      case 'S': case 'Q': ax = c.args[2]; ay = c.args[3]; xi = 2; yi = 3; break;
+      case 'A': ax = c.args[5]; ay = c.args[6]; xi = 5; yi = 6; break;
+      case 'Z': /* returns to subpath start — no editable anchor */ break;
+    }
+    if (ax != null) {
+      anchors.push({ i, x: ax, y: ay, xi, yi, cmd: c.cmd });
+      if (c.cmd === 'M') { sx = ax; sy = ay; }
+      px = ax; py = ay;
+    } else if (c.cmd === 'Z') { px = sx; py = sy; }
+  });
+  return anchors;
+}
+
+let editState = null;
+function renderPathAnchors(el) {
+  const svg = currentCanvasSvg();
+  if (!svg) return;
+  const d = el.getAttribute('d') || '';
+  const cmds = absolutize(parsePathData(d));
+  const anchors = extractPathAnchors(cmds);
+  editState = { cmds, anchors, el };
+
+  const ctm = el.getScreenCTM();
+  if (!ctm) return;
+  const wrapRect = canvasWrap.getBoundingClientRect();
+  anchors.forEach((a, idx) => {
+    const pt = svg.createSVGPoint();
+    pt.x = a.x; pt.y = a.y;
+    const p = pt.matrixTransform(ctm);
+    const dot = document.createElement('div');
+    dot.className = 'anchor';
+    dot.dataset.anchor = String(idx);
+    dot.style.left = (p.x - wrapRect.left) + 'px';
+    dot.style.top = (p.y - wrapRect.top) + 'px';
+    dot.addEventListener('pointerdown', (ev) => beginAnchorDrag(idx, ev));
+    handlesEl.appendChild(dot);
+  });
+}
+function beginAnchorDrag(anchorIdx, e) {
+  e.stopPropagation();
+  e.preventDefault();
+  if (!editState) return;
+  markBaseline();
+  const el = editState.el;
+  const svg = el.ownerSVGElement || currentCanvasSvg();
+  // Direct one-step conversion: client pixels → element's local coord space
+  // via the element's own getScreenCTM.inverse(). This automatically handles
+  // viewBox scaling, preserveAspectRatio letterboxing, CSS transforms on any
+  // ancestor (e.g. the pan translate on canvas-wrap), and the element's own
+  // transform attribute — so there's no coord-space mismatch to introduce
+  // drift.
+  const drag = { anchorIdx };
+  function move(ev) {
+    const sctm = el.getScreenCTM();
+    if (!sctm) return;
+    const inv = sctm.inverse();
+    const p = svg.createSVGPoint();
+    p.x = ev.clientX; p.y = ev.clientY;
+    const local = p.matrixTransform(inv);
+    const a = editState.anchors[drag.anchorIdx];
+    if (a.xi != null) editState.cmds[a.i].args[a.xi] = local.x;
+    if (a.yi != null) editState.cmds[a.i].args[a.yi] = local.y;
+    a.x = local.x; a.y = local.y;
+    const newD = serializePathData(editState.cmds);
+    const srcEl = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
+    if (srcEl) srcEl.setAttribute('d', newD);
+    el.setAttribute('d', newD);
+    renderHandles();
+  }
+  function up() {
+    window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', up);
+    commitIfChanged();
+  }
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+}
+
 // ---- Selection handles overlay ----
 function renderHandles() {
   handlesEl.innerHTML = '';
-  if (state.selectedEl === null) return;
+  if (state.selectedEl === null) { hideQuickActions(); return; }
   const svg = currentCanvasSvg();
-  if (!svg) return;
+  if (!svg) { hideQuickActions(); return; }
   const el = svg.querySelector(`[data-idx="${state.selectedEl}"]`);
-  if (!el) return;
+  if (!el) { hideQuickActions(); return; }
+
+  // Show/hide the "edit path points" popover button based on element type.
+  const isPath = el.tagName.toLowerCase() === 'path';
+  qaEditPath?.classList.toggle('hidden', !isPath);
+  if (!isPath && state.editingPath) { state.editingPath = false; qaEditPath?.classList.remove('active'); }
+
   let bbox;
-  try { bbox = el.getBBox(); } catch { return; }
+  try { bbox = el.getBBox(); } catch { hideQuickActions(); return; }
   const ctm = el.getScreenCTM();
-  if (!ctm) return;
+  if (!ctm) { hideQuickActions(); return; }
   const wrapRect = canvasWrap.getBoundingClientRect();
 
   const toLocal = (x, y) => {
@@ -202,6 +492,14 @@ function renderHandles() {
   border.style.height = h + 'px';
   handlesEl.appendChild(border);
 
+  // Path-edit mode: replace corner resize handles with anchor dots
+  if (state.editingPath && isPath) {
+    renderPathAnchors(el);
+    positionQuickActions(left, top, right);
+    syncQuickActionsFromSelection();
+    return;
+  }
+
   // Corner handles on the axis-aligned box (interactive: drag to resize)
   const cornerPts = [
     { x: left, y: top, id: 'tl' },
@@ -225,6 +523,9 @@ function renderHandles() {
   label.style.left = (left + w / 2) + 'px';
   label.style.top = (bottom + 8) + 'px';
   handlesEl.appendChild(label);
+
+  positionQuickActions(left, top, right);
+  syncQuickActionsFromSelection();
 }
 
 // ---- Tools palette ----
@@ -358,40 +659,32 @@ function onHandlePointerDown(corner, e) {
   const live = canvas?.querySelector(`[data-idx="${state.selectedEl}"]`);
   if (!src || !live) return;
 
-  let bbox;
-  try { bbox = live.getBBox(); } catch { return; }
-  if (bbox.width <= 0 || bbox.height <= 0) return;
+  const eff = getEffectiveBBox(src);
+  if (!eff || eff.local.width <= 0 || eff.local.height <= 0) return;
 
   markBaseline();
 
-  // Effective (post-transform) bbox in the parent's coord space.
-  const startPt = clientToSvg(canvas, e.clientX, e.clientY);
-  const ctm = live.getCTM(); // element's transform relative to its nearest viewport
-  const pt = canvas.createSVGPoint();
-  function toParent(x, y) {
-    pt.x = x; pt.y = y;
-    const p = pt.matrixTransform(ctm);
-    return { x: p.x, y: p.y };
-  }
-  const c00 = toParent(bbox.x, bbox.y);
-  const c11 = toParent(bbox.x + bbox.width, bbox.y + bbox.height);
-  const effLeft = Math.min(c00.x, c11.x);
-  const effTop = Math.min(c00.y, c11.y);
-  const effRight = Math.max(c00.x, c11.x);
-  const effBottom = Math.max(c00.y, c11.y);
-
   // Anchor = corner opposite the one grabbed.
-  let anchorX = 0, anchorY = 0;
-  if (corner === 'tl') { anchorX = effRight; anchorY = effBottom; }
-  else if (corner === 'tr') { anchorX = effLeft; anchorY = effBottom; }
-  else if (corner === 'bl') { anchorX = effRight; anchorY = effTop; }
-  else if (corner === 'br') { anchorX = effLeft; anchorY = effTop; }
+  // Handle = the corner being dragged (used to track click offset so the
+  // shape doesn't jump by (click-point − true-corner) on the first move).
+  let anchorX = 0, anchorY = 0, handleX = 0, handleY = 0;
+  if (corner === 'tl') { anchorX = eff.right;  anchorY = eff.bottom; handleX = eff.left;  handleY = eff.top; }
+  else if (corner === 'tr') { anchorX = eff.left;   anchorY = eff.bottom; handleX = eff.right; handleY = eff.top; }
+  else if (corner === 'bl') { anchorX = eff.right;  anchorY = eff.top;    handleX = eff.left;  handleY = eff.bottom; }
+  else if (corner === 'br') { anchorX = eff.left;   anchorY = eff.top;    handleX = eff.right; handleY = eff.bottom; }
+
+  const startPt = clientToSvg(canvas, e.clientX, e.clientY);
+  // Offset the cursor by (true corner − click point) on every subsequent
+  // move so the drag corner tracks precisely where the handle was grabbed.
+  const offsetX = handleX - startPt.x;
+  const offsetY = handleY - startPt.y;
 
   resizeCtx = {
-    corner, src, live, bbox,
-    anchorX, anchorY,
-    startPt,
-    aspect: bbox.width / bbox.height,
+    corner, src, live,
+    bbox: eff.local,        // local (getBBox), constant during drag
+    anchorX, anchorY,       // viewBox coords (same space as cursor)
+    offsetX, offsetY,       // click-offset compensation
+    aspect: eff.local.width / eff.local.height,
   };
   window.addEventListener('pointermove', onResizeMove);
   window.addEventListener('pointerup', onResizeEnd, { once: true });
@@ -400,8 +693,11 @@ function onResizeMove(e) {
   if (!resizeCtx) return;
   const canvas = currentCanvasSvg();
   if (!canvas) return;
-  const pt = clientToSvg(canvas, e.clientX, e.clientY);
-  let { bbox, anchorX, anchorY, aspect, src, live } = resizeCtx;
+  const raw = clientToSvg(canvas, e.clientX, e.clientY);
+  let { bbox, anchorX, anchorY, offsetX, offsetY, aspect, src, live } = resizeCtx;
+  // Snap the drag corner to (cursor + captured click offset) so it lines up
+  // exactly with where the handle was grabbed.
+  const pt = { x: raw.x + offsetX, y: raw.y + offsetY };
 
   let dx = pt.x - anchorX;
   let dy = pt.y - anchorY;
@@ -595,6 +891,58 @@ function paste(offset = 10) {
   showToast('Pasted');
 }
 function duplicateSelection() { if (state.selectedEl === null) return; copySelection(); paste(); }
+
+// Ctrl+V dispatch: internal shape clipboard wins; otherwise try the OS
+// clipboard for raw SVG markup (from a Figma copy-as-SVG, another editor,
+// or any text with an <svg> in it).
+async function pasteAny() {
+  if (state.clipboard) { paste(); return; }
+  if (!navigator.clipboard?.readText) { showToast('Clipboard read not supported'); return; }
+  try {
+    const text = await navigator.clipboard.readText();
+    if (text && /<svg[\s>]/i.test(text)) importSvgText(text);
+    else showToast('Nothing to paste');
+  } catch (err) {
+    showToast(`Clipboard read failed: ${err.message}`);
+  }
+}
+
+// Import raw SVG markup: extract every shape from it, tag with fresh idxs,
+// append to the current icon, and select the last one.
+function importSvgText(text) {
+  const trimmed = (text || '').trim();
+  if (!trimmed) return false;
+  const doc = new DOMParser().parseFromString(trimmed, 'image/svg+xml');
+  const parseError = doc.querySelector('parsererror');
+  if (parseError) { showToast('Pasted content is not valid SVG'); return false; }
+  const srcSvg = doc.documentElement;
+  if (!srcSvg || (srcSvg.tagName.toLowerCase() !== 'svg' && srcSvg.namespaceURI !== SVG_NS)) {
+    showToast('No <svg> root found');
+    return false;
+  }
+  const shapes = srcSvg.querySelectorAll('path, rect, circle, ellipse, polygon, polyline, line, g');
+  if (!shapes.length) { showToast('No shapes in the pasted SVG'); return false; }
+  markBaseline();
+  const imported = [];
+  for (const sh of shapes) {
+    // Skip nested shapes already covered by an ancestor <g> we imported.
+    if (sh.parentElement && [...shapes].includes(sh.parentElement)) continue;
+    const clone = state.svgDoc.ownerDocument.importNode(sh, true);
+    // Tag the top-level import as a shape; nested descendants stay untagged.
+    const idx = nextIdx();
+    tagShape(clone, idx);
+    state.svgDoc.appendChild(clone);
+    imported.push(idx);
+  }
+  if (!imported.length) { pendingBaseline = null; return false; }
+  state.selectedEl = imported[imported.length - 1];
+  mountCanvas();
+  renderTree();
+  renderProps();
+  commitIfChanged();
+  showToast(`Imported ${imported.length} shape${imported.length > 1 ? 's' : ''}`);
+  return true;
+}
 function deleteSelection() {
   if (state.selectedEl === null) return;
   markBaseline();
@@ -663,7 +1011,7 @@ window.addEventListener('keydown', (e) => {
     if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); redo(); return; }
     if (!inInput) {
       if (k === 'c') { e.preventDefault(); copySelection(); return; }
-      if (k === 'v') { e.preventDefault(); paste(); return; }
+      if (k === 'v') { e.preventDefault(); pasteAny(); return; }
       if (k === 'd') { e.preventDefault(); duplicateSelection(); return; }
       if (k === ']') { e.preventDefault(); e.shiftKey ? bringToFront() : bringForward(); return; }
       if (k === '[') { e.preventDefault(); e.shiftKey ? sendToBack() : sendBackward(); return; }
@@ -671,6 +1019,20 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   if (inInput) return;
+
+  // Enter / Escape: toggle path-edit mode
+  if (e.key === 'Enter' && state.selectedEl !== null) {
+    const el = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
+    if (el?.tagName.toLowerCase() === 'path') { e.preventDefault(); togglePathEdit(); return; }
+  }
+  if (e.key === 'Escape' && state.editingPath) {
+    e.preventDefault();
+    state.editingPath = false;
+    qaEditPath?.classList.remove('active');
+    renderHandles();
+    return;
+  }
+
   const toolKeys = { v: 'select', r: 'rect', o: 'ellipse', l: 'line' };
   if (toolKeys[e.key.toLowerCase()]) { e.preventDefault(); setTool(toolKeys[e.key.toLowerCase()]); return; }
   if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteSelection(); return; }
@@ -684,20 +1046,20 @@ window.addEventListener('keydown', (e) => {
 });
 
 // ---- Alignment ----
+// Effective (post-transform) bounding box in the CANVAS SVG's viewBox coord
+// space. Uses getBoundingClientRect() → clientToSvg() so it is guaranteed
+// to live in the same coord space as cursor positions during a drag.
 function getEffectiveBBox(el) {
   const canvas = currentCanvasSvg();
   const live = canvas?.querySelector(`[data-idx="${el.getAttribute('data-idx')}"]`);
-  if (!live) return null;
+  if (!canvas || !live) return null;
   let bbox;
   try { bbox = live.getBBox(); } catch { return null; }
-  const ctm = live.getCTM();
-  if (!ctm) return null;
-  const pt = canvas.createSVGPoint();
-  function toParent(x, y) { pt.x = x; pt.y = y; return pt.matrixTransform(ctm); }
-  const p1 = toParent(bbox.x, bbox.y);
-  const p2 = toParent(bbox.x + bbox.width, bbox.y + bbox.height);
-  const left = Math.min(p1.x, p2.x), right = Math.max(p1.x, p2.x);
-  const top = Math.min(p1.y, p2.y), bottom = Math.max(p1.y, p2.y);
+  const r = live.getBoundingClientRect();
+  const tl = clientToSvg(canvas, r.left, r.top);
+  const br = clientToSvg(canvas, r.right, r.bottom);
+  const left = Math.min(tl.x, br.x), right = Math.max(tl.x, br.x);
+  const top = Math.min(tl.y, br.y), bottom = Math.max(tl.y, br.y);
   return { left, top, right, bottom, width: right - left, height: bottom - top, local: bbox };
 }
 function alignSelection(dir) {
@@ -828,6 +1190,17 @@ function renderProps() {
       </div>
     </div>`;
 
+    const swatchMarkup = (targetKey, currentVal) => PALETTE.map(c => {
+      const isNone = c === 'none';
+      const isCur = c === 'currentColor';
+      const cls = isNone ? 'none' : isCur ? 'current' : '';
+      const active = (isNone && (currentVal === 'none')) ||
+                     (isCur && currentVal === 'currentColor') ||
+                     (!isNone && !isCur && currentVal?.toLowerCase() === c.toLowerCase());
+      const style = (isNone || isCur) ? '' : `background:${c};`;
+      return `<button class="swatch ${cls}${active ? ' active' : ''}" data-target="${targetKey}" data-color="${c}" title="${c}" style="${style}"></button>`;
+    }).join('');
+
     // Fill
     html += `<div class="space-y-2 pt-4 border-t ui-border">
       <div class="p-title">Fill</div>
@@ -835,6 +1208,7 @@ function renderProps() {
         <input type="color" value="${fillColor}" id="p-fill-color" ${fillIsCurrent ? 'disabled' : ''} />
         <input type="text" value="${escapeAttr(fill)}" id="p-fill-text" class="flex-1 font-mono text-[11px]" />
       </div>
+      <div class="flex flex-wrap gap-1 pt-1">${swatchMarkup('fill', fill)}</div>
       <label class="flex items-center gap-2 text-[11px] text-on-surface-variant cursor-pointer">
         <input type="checkbox" id="p-fill-current" ${fillIsCurrent ? 'checked' : ''} class="accent-primary" />
         Use <code class="text-primary font-mono">currentColor</code>
@@ -848,6 +1222,7 @@ function renderProps() {
         <input type="color" value="${strokeColor}" id="p-stroke-color" ${strokeIsCurrent || !stroke ? 'disabled' : ''} />
         <input type="text" value="${escapeAttr(stroke)}" id="p-stroke" placeholder="none / #hex" class="flex-1 font-mono text-[11px]" />
       </div>
+      <div class="flex flex-wrap gap-1 pt-1">${swatchMarkup('stroke', stroke || 'none')}</div>
       <div class="grid grid-cols-2 gap-3 mt-2">
         <div class="input-field rounded-lg px-3 py-2 flex items-center"><span class="text-on-surface-variant text-[11px] font-mono mr-2 w-4">W</span><input type="number" step="0.1" min="0" value="${strokeWidth}" id="p-stroke-w" /></div>
         <div class="input-field rounded-lg px-3 py-2 flex items-center"><span class="material-symbols-outlined text-sm text-on-surface-variant mr-2 w-4">opacity</span><input type="number" step="0.05" min="0" max="1" value="${opacity}" id="p-opacity" /></div>
@@ -903,11 +1278,43 @@ function renderProps() {
   // Alignment buttons
   propsEl.querySelectorAll('button[data-align]').forEach(b => b.addEventListener('click', () => alignSelection(b.dataset.align)));
 
+  // Color swatches (Fill/Stroke)
+  propsEl.querySelectorAll('button.swatch[data-target]').forEach(b => {
+    b.addEventListener('click', () => {
+      const c = b.dataset.color;
+      const t = b.dataset.target;
+      if (state.selectedEl === null) return;
+      const el = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
+      if (!el) return;
+      const attr = t === 'fill' ? 'fill' : 'stroke';
+      withEdit(() => {
+        if (c === 'none') el.setAttribute(attr, 'none');
+        else el.setAttribute(attr, c);
+        const live = currentCanvasSvg()?.querySelector(`[data-idx="${state.selectedEl}"]`);
+        if (live) {
+          if (c === 'none') live.setAttribute(attr, 'none');
+          else live.setAttribute(attr, c);
+        }
+        renderProps();
+      });
+    });
+  });
+
   // Wire icon-root
   const setSvgAttr = (name, val) => {
     if (val === '' || val == null) svg.removeAttribute(name); else svg.setAttribute(name, val);
     const live = currentCanvasSvg();
-    if (live) { if (val === '' || val == null) live.removeAttribute(name); else live.setAttribute(name, val); }
+    if (!live) return;
+    // For width/height, the canvas svg is rendered at (source × zoom); other
+    // attributes (viewBox, class, etc.) are mirrored verbatim.
+    if (name === 'width' || name === 'height') {
+      if (val === '' || val == null) live.removeAttribute(name);
+      else live.setAttribute(name, (parseFloat(val) || 0) * state.zoom);
+      renderHandles();
+      return;
+    }
+    if (val === '' || val == null) live.removeAttribute(name); else live.setAttribute(name, val);
+    if (name === 'viewBox') renderHandles();
   };
   const setTitle = (val) => {
     let t = svg.querySelector('title');
@@ -1014,7 +1421,7 @@ function renderProps() {
 
 // ---- Toolbar ----
 function setZoom(z) {
-  state.zoom = Math.max(1, Math.min(12, z));
+  state.zoom = Math.max(0.5, Math.min(20, z));
   const pct = `${Math.round(state.zoom * 100)}%`;
   zoomLabel.textContent = pct;
   if (zoomDisplay) zoomDisplay.textContent = pct;
@@ -1023,6 +1430,115 @@ function setZoom(z) {
 zoomInBtn?.addEventListener('click', () => setZoom(state.zoom + 1));
 zoomOutBtn?.addEventListener('click', () => setZoom(state.zoom - 1));
 setZoom(state.zoom);
+
+// Ctrl / Cmd + wheel to zoom. Exponential scaling gives a consistent
+// relative change per notch, and needs `passive: false` so we can
+// preventDefault (otherwise the browser will scroll the page).
+const canvasMain = document.querySelector('main');
+canvasMain?.addEventListener('wheel', (e) => {
+  if (!e.ctrlKey && !e.metaKey) return;
+  e.preventDefault();
+  const factor = Math.exp(-e.deltaY * 0.0018);
+  setZoom(state.zoom * factor);
+}, { passive: false });
+
+// Suppress the browser context menu on the canvas — the right button is
+// reserved for future pan/context-menu features and shouldn't ever show
+// the browser's default one here.
+canvasMain?.addEventListener('contextmenu', (e) => e.preventDefault());
+
+// Drag an .svg file (or an SVG string) from anywhere onto the canvas to
+// import its shapes into the current icon.
+canvasMain?.addEventListener('dragover', (e) => { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'; });
+canvasMain?.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  const file = e.dataTransfer?.files?.[0];
+  if (file && (file.type === 'image/svg+xml' || /\.svg$/i.test(file.name))) {
+    importSvgText(await file.text());
+    return;
+  }
+  const text = e.dataTransfer?.getData('text/plain') || e.dataTransfer?.getData('image/svg+xml');
+  if (text && /<svg[\s>]/i.test(text)) importSvgText(text);
+});
+
+// ---- Space + drag pan ----
+// The canvas-wrap holds both the SVG and the handles overlay, so translating
+// its CSS transform moves everything (shapes, anchors, handles) together.
+// getScreenCTM sees the CSS transform, so clientToSvg still returns correct
+// viewBox coords after panning.
+state.pan = { x: 0, y: 0 };
+state.spaceDown = false;
+function applyPan() {
+  if (canvasWrap) canvasWrap.style.transform = `translate(${state.pan.x}px, ${state.pan.y}px)`;
+}
+function setSpaceCursor(active) {
+  if (!canvasMain) return;
+  canvasMain.style.cursor = active ? 'grab' : '';
+  const svg = currentCanvasSvg();
+  if (svg) svg.style.cursor = active ? 'grab' : (state.tool === 'select' ? 'default' : 'crosshair');
+}
+window.addEventListener('keydown', (e) => {
+  if (e.code !== 'Space') return;
+  const tgt = e.target;
+  if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.tagName === 'SELECT')) return;
+  if (e.repeat) { e.preventDefault(); return; }
+  e.preventDefault();
+  state.spaceDown = true;
+  setSpaceCursor(true);
+});
+window.addEventListener('keyup', (e) => {
+  if (e.code !== 'Space') return;
+  state.spaceDown = false;
+  setSpaceCursor(false);
+});
+// If the window loses focus mid-pan, don't get stuck with spaceDown = true.
+window.addEventListener('blur', () => { state.spaceDown = false; setSpaceCursor(false); });
+
+let panCtx = null;
+function onPanMove(e) {
+  if (!panCtx) return;
+  state.pan.x = panCtx.baseX + (e.clientX - panCtx.startX);
+  state.pan.y = panCtx.baseY + (e.clientY - panCtx.startY);
+  applyPan();
+  renderHandles();
+}
+function onPanUp() {
+  panCtx = null;
+  window.removeEventListener('pointermove', onPanMove);
+  if (canvasMain) canvasMain.style.cursor = state.spaceDown ? 'grab' : '';
+}
+// Capture phase so we can pre-empt shape / deselect / draw handlers when
+// the user is space-panning. stopPropagation blocks the rest.
+canvasMain?.addEventListener('pointerdown', (e) => {
+  if (!state.spaceDown || e.button !== 0) return;
+  e.preventDefault();
+  e.stopPropagation();
+  panCtx = { startX: e.clientX, startY: e.clientY, baseX: state.pan.x, baseY: state.pan.y };
+  if (canvasMain) canvasMain.style.cursor = 'grabbing';
+  window.addEventListener('pointermove', onPanMove);
+  window.addEventListener('pointerup', onPanUp, { once: true });
+}, true);
+
+// Clicking empty canvas area (not on a shape, handle, anchor, or floating
+// UI) deselects the current shape and exits path-edit mode. The existing
+// onCanvasPointerDown handler covers clicks inside the SVG background;
+// this handler covers the darker workspace around the SVG.
+canvasMain?.addEventListener('pointerdown', (e) => {
+  if (e.button !== 0) return;                              // left click only
+  if (state.tool !== 'select') return;                     // draw tools begin a shape
+  if (e.target.closest('#canvas')) return;                 // handled inside the SVG
+  if (e.target.closest('#tools-palette')) return;
+  if (e.target.closest('#quick-actions')) return;
+  if (e.target.closest('#handles')) return;
+  if (e.target.closest('.glass-panel')) return;
+  if (e.target.closest('button, input, label')) return;
+  selectElement(null);
+  if (state.editingPath) {
+    state.editingPath = false;
+    qaEditPath?.classList.remove('active');
+    renderHandles();
+  }
+});
 resetBtn.addEventListener('click', () => { if (state.selectedIcon) loadIntoStudio({ ...state.selectedIcon, svg: state.original }); });
 centerBtn.addEventListener('click', () => withEdit(() => {
   if (state.selectedEl === null) return;
@@ -1128,7 +1644,7 @@ saveCat.addEventListener('change', () => {
 
 function validateSlug(s) { return /^[a-z0-9][a-z0-9-]*$/.test(s); }
 
-saveConfirm.addEventListener('click', () => {
+saveConfirm.addEventListener('click', async () => {
   const name = (saveName.value || '').trim().toLowerCase();
   const cat = (saveCat.value === '__new__'
     ? (saveNewCat.value || '').trim().toLowerCase()
@@ -1143,23 +1659,57 @@ saveConfirm.addEventListener('click', () => {
     files: [{ path: `${name}.svg`, content: svgContent }],
   };
   const body = JSON.stringify(json, null, 2) + '\n';
-  const blob = new Blob([body], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${name}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
 
-  // Also persist to the session's custom library.
-  const custom = loadCustomIcons();
-  const idx = custom.findIndex(c => c.name === name);
-  if (idx >= 0) custom[idx] = { name, svg: svgContent };
-  else custom.push({ name, svg: svgContent });
-  saveCustomIcons(custom);
+  saveConfirm.disabled = true;
+  saveConfirm.textContent = 'Saving…';
+  try {
+    const res = await fetch('/api/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category: cat, name, content: body }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
 
-  saveDialog.close();
-  showToast(`Saved ${cat}/${name}.json`);
+    // Reflect the save in the current session so it shows up in the sidebar
+    // and Browse tab without a full reload.
+    const existing = state.icons.find(i => i.name === name && i.category === cat);
+    if (existing) existing.svg = svgContent;
+    else state.icons.push({ name, category: cat, svg: svgContent });
+    let catEntry = state.categories.find(c => c.name === cat);
+    if (!catEntry) { catEntry = { name: cat, items: [] }; state.categories.push(catEntry); }
+    if (!catEntry.items.some(i => i.name === name)) catEntry.items.push({ name, target: `${cat}/${name}.json`, type: cat });
+
+    // If this icon is what's loaded, keep the reference in sync so subsequent
+    // Reset restores the just-saved version rather than the original.
+    if (state.selectedIcon?.name === name && state.selectedIcon?.category === cat) {
+      state.selectedIcon.svg = svgContent;
+      state.original = svgContent;
+    } else {
+      // Re-load the icon so the Studio URL/name badge reflects the save.
+      state.selectedIcon = { name, category: cat, svg: svgContent };
+      state.original = svgContent;
+      nameEl.textContent = `${cat} / ${name}`;
+      history.replaceState(null, '', `/studio?icon=${encodeURIComponent(cat + '/' + name)}`);
+    }
+
+    renderIconList();
+    saveDialog.close();
+    showToast(`Saved ${data.path || `${cat}/${name}.json`}`);
+  } catch (err) {
+    console.error(err);
+    showToast(`Save failed: ${err.message} — falling back to download`);
+    // Fallback: browser download so work isn't lost if the server can't write
+    // (e.g., running the demo hosted without the local Node server).
+    const blob = new Blob([body], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `${name}.json`; a.click();
+    URL.revokeObjectURL(url);
+  } finally {
+    saveConfirm.disabled = false;
+    saveConfirm.textContent = 'Save to Repo';
+  }
 });
 
 // Top "Export" opens the save dialog; a plain .svg download stays available

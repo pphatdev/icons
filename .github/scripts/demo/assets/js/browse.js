@@ -33,7 +33,7 @@ function render() {
   setStats(`${filtered.length} of ${state.icons.length} icons`);
   document.documentElement.style.setProperty('--icon-size', state.size + 'px');
 
-  if (filtered.length === 0) { grid.innerHTML = '<div class="empty">No matches.</div>'; return; }
+  if (filtered.length === 0) { grid.innerHTML = '<div class="col-span-full text-center text-on-surface-variant py-8">No matches.</div>'; return; }
   const frag = document.createDocumentFragment();
   for (const icon of filtered) {
     const tile = document.createElement('div');
@@ -77,6 +77,6 @@ sizeInput.addEventListener('input', e => {
     }
     render();
   } catch (err) {
-    grid.innerHTML = `<div class="empty">Failed to load: ${err.message}</div>`;
+    grid.innerHTML = `<div class="col-span-full text-center text-red-400 py-8">Failed to load: ${err.message}</div>`;
   }
 })();
