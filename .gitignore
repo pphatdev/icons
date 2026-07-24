@@ -1,2 +1,4 @@
 .github/scripts/dist/
 node_modules/
+
+.claude/
