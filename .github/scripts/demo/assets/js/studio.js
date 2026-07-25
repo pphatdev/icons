@@ -10,14 +10,39 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 const state = {
   icons: [], categories: [], selectedIcon: null,
   svgDoc: null,
+  // `selectedEl` is the "focused" selection — the last-clicked shape whose
+  // props are shown in the panel. `selectedEls` is the true selection set;
+  // most operations (delete / duplicate / nudge / rotate / group / merge)
+  // iterate the set. For a single selection the two agree.
   selectedEl: null,
+  selectedEls: new Set(),
   tool: 'select',
   zoom: 4,
   original: null,
   history: { past: [], future: [] },
   clipboard: null,
   nextIdx: 0,
+  // Anchor indices selected in path-edit mode. Cleared when the selected
+  // element or editing-mode changes.
+  selectedAnchors: new Set(),
+  // Snapping & grid: `size` is expressed in viewBox units. `snap` toggles
+  // whether draw/drag/resize/anchor movements snap to grid; `grid` toggles
+  // whether the visual grid pattern is drawn on the canvas.
+  snap: true,
+  grid: true,
+  gridSize: 1,
 };
+
+// Snap helpers. Passed a viewBox coord, return the nearest grid intersection
+// when snap is enabled, else the raw value. Both `snapV` and `snapPt` respect
+// the current gridSize; callers can pass `force=false` to bypass (used when
+// e.g. Alt is held to temporarily disable snapping mid-drag).
+function snapV(v, force) {
+  if (!(state.snap ?? true) && !force) return v;
+  const s = Math.max(0.01, state.gridSize || 1);
+  return Math.round(v / s) * s;
+}
+function snapPt(pt, force) { return { x: snapV(pt.x, force), y: snapV(pt.y, force) }; }
 
 // ---- DOM refs ----
 const iconList = document.getElementById('icon-list');
@@ -62,6 +87,69 @@ function setTranslate(el, x, y) {
   const t = `translate(${x.toFixed(3)}, ${y.toFixed(3)})`;
   el.setAttribute('transform', stripped ? `${t} ${stripped}` : t);
 }
+// Rotate / flip helpers. Both use the shape's LOCAL bbox center so the
+// operation is "in place" visually. Composed as APPEND (rotate/flip applied
+// first, translate/scale applied on top) so existing setTranslate /
+// setTransformResize (which strip translate/scale but keep other
+// components) don't disturb them.
+//
+// Caveat: after rotating a shape, corner-drag resize math (which assumes
+// axis-aligned bbox) can produce unexpected results. Rotate/flip after
+// resizing is safe; the other order is not. Documented in the shortcut
+// cheat sheet indirectly.
+function setRotation(el, deg) {
+  const cur = el.getAttribute('transform') || '';
+  const stripped = cur.replace(/rotate\([^)]*\)\s*/g, '').trim();
+  const d = Number(deg);
+  if (!isFinite(d) || d === 0) {
+    if (stripped) el.setAttribute('transform', stripped);
+    else el.removeAttribute('transform');
+    el.removeAttribute('data-rotate');
+    return;
+  }
+  let bbox;
+  try { bbox = el.getBBox(); } catch { bbox = { x: 0, y: 0, width: 0, height: 0 }; }
+  const cx = bbox.x + bbox.width / 2;
+  const cy = bbox.y + bbox.height / 2;
+  const r = `rotate(${d.toFixed(3)} ${cx.toFixed(3)} ${cy.toFixed(3)})`;
+  el.setAttribute('transform', stripped ? `${stripped} ${r}` : r);
+  el.setAttribute('data-rotate', String(d));
+}
+function setFlip(el, flipH, flipV) {
+  const cur = el.getAttribute('transform') || '';
+  // Only strip matrix() flips we own — identifiable because they have the
+  // shape `matrix(±1, 0, 0, ±1, tx, ty)`. Foreign matrices stay intact.
+  const stripped = cur.replace(/matrix\(\s*-?1\s*,\s*0\s*,\s*0\s*,\s*-?1\s*,[^)]*\)\s*/g, '').trim();
+  if (!flipH && !flipV) {
+    if (stripped) el.setAttribute('transform', stripped);
+    else el.removeAttribute('transform');
+    el.removeAttribute('data-flip-h');
+    el.removeAttribute('data-flip-v');
+    return;
+  }
+  let bbox;
+  try { bbox = el.getBBox(); } catch { bbox = { x: 0, y: 0, width: 0, height: 0 }; }
+  const cx = bbox.x + bbox.width / 2;
+  const cy = bbox.y + bbox.height / 2;
+  const fh = flipH ? -1 : 1;
+  const fv = flipV ? -1 : 1;
+  const tx = cx * (1 - fh);
+  const ty = cy * (1 - fv);
+  const m = `matrix(${fh}, 0, 0, ${fv}, ${tx.toFixed(3)}, ${ty.toFixed(3)})`;
+  el.setAttribute('transform', stripped ? `${stripped} ${m}` : m);
+  if (flipH) el.setAttribute('data-flip-h', '1'); else el.removeAttribute('data-flip-h');
+  if (flipV) el.setAttribute('data-flip-v', '1'); else el.removeAttribute('data-flip-v');
+}
+// Read current rotation / flip flags from the shape's data-* attributes,
+// which are set by setRotation/setFlip and preserved across saves via
+// serialization (they're stripped in serializeStudio to keep exports clean).
+function readRotation(el) { return parseFloat(el?.getAttribute('data-rotate') || '0') || 0; }
+function readFlip(el) {
+  return {
+    h: el?.getAttribute('data-flip-h') === '1',
+    v: el?.getAttribute('data-flip-v') === '1',
+  };
+}
 function clientToSvg(svg, x, y) {
   // Use the SVG's own inverse matrix so it correctly handles viewBox +
   // preserveAspectRatio. A naive rect.width interpolation is wrong when the
@@ -81,6 +169,50 @@ function clientToSvg(svg, x, y) {
 }
 function tagShape(el, idx) { el.setAttribute('data-shape', 'true'); el.setAttribute('data-idx', idx); }
 function nextIdx() { return String(state.nextIdx++); }
+
+// ---- Lock ----
+// Locking is stored per-shape as `data-locked="1"` on the source element.
+// The live canvas clone inherits the attribute (via mountCanvas) so a CSS
+// rule can disable pointer events on it. Every mutation path below also
+// checks isLocked() as a defence-in-depth against DOM-bypassing entry
+// points (keyboard, tree click, imported clipboard, etc.).
+function isLocked(elOrIdx) {
+  if (!elOrIdx && elOrIdx !== 0) return false;
+  const el = typeof elOrIdx === 'string' || typeof elOrIdx === 'number'
+    ? state.svgDoc?.querySelector(`[data-idx="${elOrIdx}"]`)
+    : elOrIdx;
+  return el?.getAttribute('data-locked') === '1';
+}
+function selectionLocked() { return state.selectedEl !== null && isLocked(state.selectedEl); }
+// Toggles the lock on the given shape idx (defaults to the current
+// selection). Syncs to both the source and live SVG copies so the CSS
+// rule takes effect immediately without a full re-mount.
+function toggleLock(idx = state.selectedEl) {
+  if (idx == null) return;
+  const src = state.svgDoc?.querySelector(`[data-idx="${idx}"]`);
+  if (!src) return;
+  const nowLocked = !isLocked(src);
+  markBaseline();
+  if (nowLocked) src.setAttribute('data-locked', '1');
+  else src.removeAttribute('data-locked');
+  const live = currentCanvasSvg()?.querySelector(`[data-idx="${idx}"]`);
+  if (live) {
+    if (nowLocked) live.setAttribute('data-locked', '1');
+    else live.removeAttribute('data-locked');
+  }
+  // If we just locked the currently-editing path, exit edit mode so its
+  // anchors stop drawing over an uneditable shape.
+  if (nowLocked && state.editingPath && String(state.selectedEl) === String(idx)) {
+    state.editingPath = false;
+    state.selectedAnchors.clear();
+    qaEditPath?.classList.remove('active');
+  }
+  renderTree();
+  renderProps();
+  renderHandles();
+  commitIfChanged();
+  showToast(nowLocked ? 'Locked' : 'Unlocked');
+}
 
 // ---- Icon list ----
 function renderIconList() {
@@ -126,6 +258,10 @@ function parseAndMount(svgString) {
   const svg = doc.documentElement;
   state.nextIdx = 0;
   svg.querySelectorAll('path, rect, circle, ellipse, polygon, polyline, line').forEach(el => {
+    // Skip shapes already inside a data-tagged group so groups act as
+    // atomic units — clicks on children route through onShapePointerDown
+    // to the group's own handler via closest('[data-shape]').
+    if (el.closest('[data-shape][data-idx]') && el.closest('[data-shape][data-idx]') !== el) return;
     tagShape(el, nextIdx());
   });
   state.svgDoc = svg;
@@ -144,18 +280,44 @@ function mountCanvas() {
   svg.setAttribute('width', srcW * state.zoom);
   svg.setAttribute('height', srcH * state.zoom);
   svg.setAttribute('id', 'canvas');
+  // Grid overlay: a viewBox-unit pattern rendered underneath the shapes.
+  // Stored under a marker id so we can update/remove it without touching
+  // user content, and only injected when the grid is visible.
+  if (state.grid) injectGridPattern(svg, srcW, srcH);
   svg.querySelectorAll('[data-shape]').forEach(el => el.addEventListener('pointerdown', onShapePointerDown));
   svg.addEventListener('pointerdown', onCanvasPointerDown);
-  // Double-click on a <path> enters node-edit mode (Figma-style).
+  // Double-click on a <path>:
+  //   • Not in edit mode → enter node-edit (Figma-style).
+  //   • Already in edit mode on that same path → insert a new anchor at
+  //     the click's projection onto the nearest linear segment.
   svg.addEventListener('dblclick', (e) => {
+    // Pen: any dblclick finishes the current path (matches Illustrator).
+    if (penCtx) { finishPen(false); return; }
     const target = e.target.closest('[data-shape]');
     if (!target || target.tagName.toLowerCase() !== 'path') return;
     const idx = target.getAttribute('data-idx');
+    if (isLocked(idx)) { showToast('Locked'); return; }
+    if (state.editingPath && String(state.selectedEl) === String(idx) && editState) {
+      const local = (() => {
+        const inv = editState.el.getScreenCTM().inverse();
+        const p = editState.el.ownerSVGElement.createSVGPoint();
+        p.x = e.clientX; p.y = e.clientY;
+        return p.matrixTransform(inv);
+      })();
+      if (insertAnchorAtLocalPoint(local)) return;
+      // Fell through — click wasn't close enough to a segment. Show a hint.
+      showToast('Double-click closer to a segment to insert a point');
+      return;
+    }
     selectElement(idx);
     state.editingPath = true;
+    state.selectedAnchors.clear();
     qaEditPath?.classList.add('active');
     qaEditPath?.classList.remove('hidden');
     renderHandles();
+    // renderHandles sets `editState` (via renderPathAnchors), so the anchor
+    // section in the props panel is now able to render.
+    renderProps();
   });
   canvasHost.appendChild(svg);
   if (state.previewColor) svg.style.color = state.previewColor;
@@ -164,6 +326,58 @@ function mountCanvas() {
   renderHandles();
 }
 function currentCanvasSvg() { return canvasHost.querySelector('svg'); }
+
+// Draw a grid pattern as the first child of the canvas SVG (so it sits
+// under user shapes). Idempotent: repeated calls replace the existing grid.
+// Grid cells scale with `state.gridSize`; a major line every 5 cells makes
+// counting easier at high zoom.
+//
+// The overlay rect and the pattern origin both live in the SVG's viewBox
+// coord space — we read viewBox min-x/min-y so an icon with a shifted
+// viewBox (e.g. the GitHub logo's negative origin) still gets a grid that
+// (a) covers the entire artboard and (b) aligns with where snap actually
+// lands (integer viewBox coords). Stroke widths compensate for the true
+// viewBox→pixel scale so lines stay hairline at any zoom / viewBox size.
+function injectGridPattern(svg, srcW, srcH) {
+  const NS = SVG_NS;
+  svg.querySelectorAll('[data-grid]').forEach(n => n.remove());
+  const vb = (svg.getAttribute('viewBox') || '').split(/\s+/).map(Number);
+  const vx = isFinite(vb[0]) ? vb[0] : 0;
+  const vy = isFinite(vb[1]) ? vb[1] : 0;
+  const vw = isFinite(vb[2]) && vb[2] > 0 ? vb[2] : srcW;
+  const vh = isFinite(vb[3]) && vb[3] > 0 ? vb[3] : srcH;
+  const size = Math.max(0.25, state.gridSize || 1);
+  // Effective on-screen scale: (displayed pixel width) / (viewBox width).
+  const px = (srcW * state.zoom) / vw;
+  const sMinor = (0.5 / px).toFixed(4);
+  const sMajor = (0.7 / px).toFixed(4);
+  const defs = svg.ownerDocument.createElementNS(NS, 'defs');
+  defs.setAttribute('data-grid', '1');
+  const patId = '__studio_grid_pat__';
+  const patMajId = '__studio_grid_pat_maj__';
+  // Pattern origin is left at (0, 0) so tiles land on integer viewBox
+  // coordinates — the same points snap rounds to. Patterns tile infinitely
+  // from their origin in both directions, so a viewBox with negative min-x
+  // (e.g. GitHub's -10.29) is still fully covered.
+  defs.innerHTML = `
+    <pattern id="${patId}" x="0" y="0" width="${size}" height="${size}" patternUnits="userSpaceOnUse">
+      <path d="M ${size} 0 L 0 0 0 ${size}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="${sMinor}"/>
+    </pattern>
+    <pattern id="${patMajId}" x="0" y="0" width="${size * 5}" height="${size * 5}" patternUnits="userSpaceOnUse">
+      <rect width="${size * 5}" height="${size * 5}" fill="url(#${patId})"/>
+      <path d="M ${size * 5} 0 L 0 0 0 ${size * 5}" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="${sMajor}"/>
+    </pattern>`;
+  svg.insertBefore(defs, svg.firstChild);
+  const rect = svg.ownerDocument.createElementNS(NS, 'rect');
+  rect.setAttribute('data-grid', '1');
+  rect.setAttribute('x', String(vx));
+  rect.setAttribute('y', String(vy));
+  rect.setAttribute('width', String(vw));
+  rect.setAttribute('height', String(vh));
+  rect.setAttribute('fill', `url(#${patMajId})`);
+  rect.style.pointerEvents = 'none';
+  svg.insertBefore(rect, defs.nextSibling);
+}
 function updateCanvasCursor() {
   const svg = currentCanvasSvg();
   if (svg) svg.style.cursor = state.tool === 'select' ? 'default' : 'crosshair';
@@ -187,7 +401,36 @@ document.querySelectorAll('.preview-swatch[data-preview]').forEach(b => {
 previewColorInput?.addEventListener('input', e => applyPreviewColor(e.target.value));
 
 function selectElement(idx) {
+  if (idx !== state.selectedEl) state.selectedAnchors.clear();
   state.selectedEl = idx;
+  state.selectedEls.clear();
+  if (idx !== null && idx !== undefined) state.selectedEls.add(String(idx));
+  applySelection();
+  renderTree();
+  renderProps();
+  renderHandles();
+}
+// Additive select: toggles `idx` in the selection Set without clearing
+// others. Used by Shift/Ctrl-click on shapes and tree rows.
+function toggleSelectElement(idx) {
+  if (idx === null || idx === undefined) return;
+  const key = String(idx);
+  if (state.selectedEls.has(key)) {
+    state.selectedEls.delete(key);
+    if (state.selectedEl === key) {
+      const remaining = Array.from(state.selectedEls);
+      state.selectedEl = remaining[remaining.length - 1] ?? null;
+    }
+  } else {
+    state.selectedEls.add(key);
+    state.selectedEl = key;
+  }
+  state.selectedAnchors.clear();
+  // Multi-select doesn't play with path-edit mode — exit it if needed.
+  if (state.selectedEls.size > 1 && state.editingPath) {
+    state.editingPath = false;
+    qaEditPath?.classList.remove('active');
+  }
   applySelection();
   renderTree();
   renderProps();
@@ -197,7 +440,7 @@ function applySelection() {
   const svg = currentCanvasSvg();
   if (!svg) return;
   svg.querySelectorAll('[data-shape]').forEach(el => {
-    el.classList.toggle('selected', el.getAttribute('data-idx') === String(state.selectedEl));
+    el.classList.toggle('selected', state.selectedEls.has(el.getAttribute('data-idx')));
   });
 }
 
@@ -276,11 +519,14 @@ qaDel?.addEventListener('click', () => deleteSelection());
 qaEditPath?.addEventListener('click', () => togglePathEdit());
 function togglePathEdit() {
   if (state.selectedEl === null) return;
+  if (selectionLocked()) { showToast('Locked'); return; }
   const el = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
   if (!el || el.tagName.toLowerCase() !== 'path') return;
   state.editingPath = !state.editingPath;
+  state.selectedAnchors.clear();
   qaEditPath?.classList.toggle('active', state.editingPath);
   renderHandles();
+  renderProps();
 }
 
 // SVG path parser: returns commands as {cmd, args}. Handles all standard
@@ -385,6 +631,12 @@ function renderPathAnchors(el) {
   const anchors = extractPathAnchors(cmds);
   editState = { cmds, anchors, el };
 
+  // Drop stale selections that reference indices past the end of the current
+  // anchor list (can happen after undo/redo or a d-attribute rewrite).
+  for (const i of Array.from(state.selectedAnchors)) {
+    if (i >= anchors.length) state.selectedAnchors.delete(i);
+  }
+
   const ctm = el.getScreenCTM();
   if (!ctm) return;
   const wrapRect = canvasWrap.getBoundingClientRect();
@@ -393,28 +645,92 @@ function renderPathAnchors(el) {
     pt.x = a.x; pt.y = a.y;
     const p = pt.matrixTransform(ctm);
     const dot = document.createElement('div');
-    dot.className = 'anchor';
+    const isSel = state.selectedAnchors.has(idx);
+    dot.className = 'anchor' + (isSel ? ' selected' : '');
     dot.dataset.anchor = String(idx);
     dot.style.left = (p.x - wrapRect.left) + 'px';
     dot.style.top = (p.y - wrapRect.top) + 'px';
+    dot.title = `Point ${idx + 1} · ${a.x.toFixed(2)}, ${a.y.toFixed(2)}`;
     dot.addEventListener('pointerdown', (ev) => beginAnchorDrag(idx, ev));
     handlesEl.appendChild(dot);
   });
+
+  // Coordinate badge for a single-anchor selection.
+  if (state.selectedAnchors.size === 1) {
+    const idx = state.selectedAnchors.values().next().value;
+    const a = anchors[idx];
+    if (a) {
+      const pt = svg.createSVGPoint();
+      pt.x = a.x; pt.y = a.y;
+      const p = pt.matrixTransform(ctm);
+      const badge = document.createElement('div');
+      badge.className = 'anchor-badge';
+      badge.textContent = `${a.x.toFixed(1)}, ${a.y.toFixed(1)}`;
+      badge.style.left = (p.x - wrapRect.left) + 'px';
+      badge.style.top = (p.y - wrapRect.top) + 'px';
+      handlesEl.appendChild(badge);
+    }
+  }
+}
+function selectAnchor(anchorIdx, additive) {
+  if (additive) {
+    if (state.selectedAnchors.has(anchorIdx)) state.selectedAnchors.delete(anchorIdx);
+    else state.selectedAnchors.add(anchorIdx);
+  } else {
+    state.selectedAnchors.clear();
+    state.selectedAnchors.add(anchorIdx);
+  }
+  renderHandles();
+  renderProps();
+}
+// Keep the visible anchor X/Y inputs in sync without re-rendering the
+// panel (which would steal focus and reset input state during a drag or
+// arrow-key nudge). No-op unless exactly one anchor is selected.
+function refreshAnchorInputs() {
+  if (!editState || state.selectedAnchors.size !== 1) return;
+  const idx = state.selectedAnchors.values().next().value;
+  const a = editState.anchors[idx];
+  if (!a) return;
+  const apX = document.getElementById('ap-x');
+  const apY = document.getElementById('ap-y');
+  if (apX && document.activeElement !== apX) apX.value = a.x.toFixed(3);
+  if (apY && document.activeElement !== apY) apY.value = a.y.toFixed(3);
 }
 function beginAnchorDrag(anchorIdx, e) {
   e.stopPropagation();
   e.preventDefault();
   if (!editState) return;
+  const additive = e.shiftKey || e.metaKey || e.ctrlKey;
+  // Clicking an unselected anchor without a modifier makes it the sole
+  // selection. Clicking one that's already selected preserves the group so
+  // a drag moves them all together.
+  if (additive) {
+    if (state.selectedAnchors.has(anchorIdx)) state.selectedAnchors.delete(anchorIdx);
+    else state.selectedAnchors.add(anchorIdx);
+  } else if (!state.selectedAnchors.has(anchorIdx)) {
+    state.selectedAnchors.clear();
+    state.selectedAnchors.add(anchorIdx);
+  }
+  renderHandles();
+  renderProps();
+
   markBaseline();
   const el = editState.el;
   const svg = el.ownerSVGElement || currentCanvasSvg();
-  // Direct one-step conversion: client pixels → element's local coord space
-  // via the element's own getScreenCTM.inverse(). This automatically handles
-  // viewBox scaling, preserveAspectRatio letterboxing, CSS transforms on any
-  // ancestor (e.g. the pan translate on canvas-wrap), and the element's own
-  // transform attribute — so there's no coord-space mismatch to introduce
-  // drift.
-  const drag = { anchorIdx };
+  // Snapshot the starting local coords of every anchor being dragged, so
+  // each one moves by the same delta regardless of how the drag began.
+  const startPt = (() => {
+    const inv = el.getScreenCTM().inverse();
+    const p = svg.createSVGPoint();
+    p.x = e.clientX; p.y = e.clientY;
+    return p.matrixTransform(inv);
+  })();
+  const startPositions = new Map();
+  for (const i of state.selectedAnchors) {
+    const a = editState.anchors[i];
+    if (a) startPositions.set(i, { x: a.x, y: a.y });
+  }
+
   function move(ev) {
     const sctm = el.getScreenCTM();
     if (!sctm) return;
@@ -422,15 +738,26 @@ function beginAnchorDrag(anchorIdx, e) {
     const p = svg.createSVGPoint();
     p.x = ev.clientX; p.y = ev.clientY;
     const local = p.matrixTransform(inv);
-    const a = editState.anchors[drag.anchorIdx];
-    if (a.xi != null) editState.cmds[a.i].args[a.xi] = local.x;
-    if (a.yi != null) editState.cmds[a.i].args[a.yi] = local.y;
-    a.x = local.x; a.y = local.y;
+    let dx = local.x - startPt.x;
+    let dy = local.y - startPt.y;
+    // Snap the DELTA (not each new coord) so a group drag keeps its relative
+    // shape while still landing on the grid. Alt bypasses snap.
+    if (!ev.altKey) { dx = snapV(dx); dy = snapV(dy); }
+    for (const [i, base] of startPositions) {
+      const a = editState.anchors[i];
+      if (!a) continue;
+      const nx = base.x + dx;
+      const ny = base.y + dy;
+      if (a.xi != null) editState.cmds[a.i].args[a.xi] = nx;
+      if (a.yi != null) editState.cmds[a.i].args[a.yi] = ny;
+      a.x = nx; a.y = ny;
+    }
     const newD = serializePathData(editState.cmds);
     const srcEl = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
     if (srcEl) srcEl.setAttribute('d', newD);
     el.setAttribute('d', newD);
     renderHandles();
+    refreshAnchorInputs();
   }
   function up() {
     window.removeEventListener('pointermove', move);
@@ -441,12 +768,346 @@ function beginAnchorDrag(anchorIdx, e) {
   window.addEventListener('pointerup', up);
 }
 
+// Nudge every selected anchor by (dx, dy) in the element's local coord
+// space. Used by the arrow-key handler in path-edit mode.
+function nudgeSelectedAnchors(dx, dy) {
+  if (!editState || state.selectedAnchors.size === 0) return;
+  if (!nudgeTimer) markBaseline();
+  clearTimeout(nudgeTimer);
+  for (const i of state.selectedAnchors) {
+    const a = editState.anchors[i];
+    if (!a) continue;
+    a.x += dx; a.y += dy;
+    if (a.xi != null) editState.cmds[a.i].args[a.xi] = a.x;
+    if (a.yi != null) editState.cmds[a.i].args[a.yi] = a.y;
+  }
+  const newD = serializePathData(editState.cmds);
+  const srcEl = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
+  if (srcEl) srcEl.setAttribute('d', newD);
+  editState.el.setAttribute('d', newD);
+  renderHandles();
+  refreshAnchorInputs();
+  nudgeTimer = setTimeout(() => { commitIfChanged(); nudgeTimer = null; }, 500);
+}
+
+// Delete every selected anchor from the path. Removing an anchor removes
+// its owning command; we skip an anchor whose command is the very first
+// M (removing that would strand the rest of the path).
+function deleteSelectedAnchors() {
+  if (!editState || state.selectedAnchors.size === 0) return;
+  const cmdIndices = new Set();
+  editState.anchors.forEach((a, idx) => {
+    if (!state.selectedAnchors.has(idx)) return;
+    if (a.i === 0 && a.cmd === 'M') return; // don't strand the path
+    cmdIndices.add(a.i);
+  });
+  if (cmdIndices.size === 0) return;
+  markBaseline();
+  const newCmds = editState.cmds.filter((_, i) => !cmdIndices.has(i));
+  if (newCmds.length === 0) return;
+  const newD = serializePathData(newCmds);
+  const srcEl = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
+  if (srcEl) srcEl.setAttribute('d', newD);
+  editState.el.setAttribute('d', newD);
+  state.selectedAnchors.clear();
+  renderHandles();
+  renderProps();
+  commitIfChanged();
+}
+
+// Return path-data string equivalent to the given shape (rect / circle /
+// ellipse / line / polygon / polyline). Rounded rects and ellipses use two
+// arcs so the resulting path is compact and self-closing. Returns null if
+// the shape isn't convertible.
+function shapeToPathData(el) {
+  const num = (name) => parseFloat(el.getAttribute(name)) || 0;
+  const tag = el.tagName.toLowerCase();
+  if (tag === 'rect') {
+    const x = num('x'), y = num('y'), w = num('width'), h = num('height');
+    const rx = Math.min(num('rx') || num('ry'), w / 2);
+    const ry = Math.min(num('ry') || num('rx'), h / 2);
+    if (rx > 0 && ry > 0) {
+      return `M${x + rx} ${y} H${x + w - rx} A${rx} ${ry} 0 0 1 ${x + w} ${y + ry} V${y + h - ry} A${rx} ${ry} 0 0 1 ${x + w - rx} ${y + h} H${x + rx} A${rx} ${ry} 0 0 1 ${x} ${y + h - ry} V${y + ry} A${rx} ${ry} 0 0 1 ${x + rx} ${y} Z`;
+    }
+    return `M${x} ${y} H${x + w} V${y + h} H${x} Z`;
+  }
+  if (tag === 'circle') {
+    const cx = num('cx'), cy = num('cy'), r = num('r');
+    return `M${cx - r} ${cy} A${r} ${r} 0 1 0 ${cx + r} ${cy} A${r} ${r} 0 1 0 ${cx - r} ${cy} Z`;
+  }
+  if (tag === 'ellipse') {
+    const cx = num('cx'), cy = num('cy'), rx = num('rx'), ry = num('ry');
+    return `M${cx - rx} ${cy} A${rx} ${ry} 0 1 0 ${cx + rx} ${cy} A${rx} ${ry} 0 1 0 ${cx - rx} ${cy} Z`;
+  }
+  if (tag === 'line') {
+    return `M${num('x1')} ${num('y1')} L${num('x2')} ${num('y2')}`;
+  }
+  if (tag === 'polygon' || tag === 'polyline') {
+    const pts = (el.getAttribute('points') || '').trim().split(/[\s,]+/).map(Number);
+    if (pts.length < 4) return null;
+    let d = `M${pts[0]} ${pts[1]}`;
+    for (let i = 2; i < pts.length; i += 2) d += ` L${pts[i]} ${pts[i + 1]}`;
+    if (tag === 'polygon') d += ' Z';
+    return d;
+  }
+  return null;
+}
+// Replace a primitive shape with an equivalent <path>, preserving its idx,
+// styling, and transform. No-op for paths and groups.
+function convertSelectionToPath() {
+  if (state.selectedEl === null) return;
+  const src = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
+  if (!src) return;
+  if (src.tagName.toLowerCase() === 'path' || src.tagName.toLowerCase() === 'g') return;
+  const d = shapeToPathData(src);
+  if (!d) return;
+  markBaseline();
+  const path = state.svgDoc.ownerDocument.createElementNS(SVG_NS, 'path');
+  path.setAttribute('d', d);
+  // Copy presentation / transform attributes, but skip the geometry ones
+  // that only make sense on the original primitive.
+  const skip = new Set(['x', 'y', 'width', 'height', 'rx', 'ry', 'cx', 'cy', 'r', 'x1', 'y1', 'x2', 'y2', 'points', 'd']);
+  for (const attr of src.attributes) {
+    if (skip.has(attr.name)) continue;
+    path.setAttribute(attr.name, attr.value);
+  }
+  src.parentNode.replaceChild(path, src);
+  mountCanvas();
+  renderTree();
+  renderProps();
+  renderHandles();
+  commitIfChanged();
+}
+// Remove anchors that lie (nearly) on the line between their neighbors.
+// Only touches L/M-with-implicit-L segments to keep curve fidelity intact.
+function simplifySelectedPath(tolerance = 0.5) {
+  if (state.selectedEl === null || !editState) return;
+  const anchors = editState.anchors;
+  if (anchors.length < 3) return;
+  const removeIdx = new Set();
+  for (let i = 1; i < anchors.length - 1; i++) {
+    const a = anchors[i - 1], b = anchors[i], c = anchors[i + 1];
+    if (!['L', 'M'].includes(b.cmd)) continue;
+    if (!['L', 'M'].includes(a.cmd) && !['L', 'M'].includes(c.cmd)) continue;
+    // Perpendicular distance from b to line a→c.
+    const dx = c.x - a.x, dy = c.y - a.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const dist = Math.abs(dy * b.x - dx * b.y + c.x * a.y - c.y * a.x) / len;
+    if (dist < tolerance) removeIdx.add(editState.anchors[i].i);
+  }
+  if (removeIdx.size === 0) { showToast('Nothing to simplify'); return; }
+  markBaseline();
+  const newCmds = editState.cmds.filter((_, i) => !removeIdx.has(i));
+  const newD = serializePathData(newCmds);
+  const srcEl = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
+  if (srcEl) srcEl.setAttribute('d', newD);
+  editState.el.setAttribute('d', newD);
+  state.selectedAnchors.clear();
+  renderHandles();
+  renderProps();
+  commitIfChanged();
+  showToast(`Removed ${removeIdx.size} point${removeIdx.size > 1 ? 's' : ''}`);
+}
+// Insert a new anchor at the given LOCAL coord, positioned on the nearest
+// segment. Only linear (L/M-continuation) segments participate; the nearest
+// segment is the one whose projected distance to the click is smallest.
+function insertAnchorAtLocalPoint(local) {
+  if (!editState) return false;
+  const cmds = editState.cmds;
+  if (!cmds || cmds.length < 2) return false;
+  // Reconstruct running position so we know each segment's start point.
+  let px = 0, py = 0, sx = 0, sy = 0;
+  let best = null; // { cmdIdx, t, x, y, dist }
+  for (let i = 0; i < cmds.length; i++) {
+    const c = cmds[i];
+    switch (c.cmd) {
+      case 'M': { px = c.args[0]; py = c.args[1]; sx = px; sy = py; break; }
+      case 'L': {
+        const ax = px, ay = py, bx = c.args[0], by = c.args[1];
+        const dx = bx - ax, dy = by - ay;
+        const len2 = dx * dx + dy * dy;
+        if (len2 > 0) {
+          let t = ((local.x - ax) * dx + (local.y - ay) * dy) / len2;
+          t = Math.max(0, Math.min(1, t));
+          const nx = ax + dx * t, ny = ay + dy * t;
+          const d = Math.hypot(local.x - nx, local.y - ny);
+          if (!best || d < best.dist) best = { cmdIdx: i, t, x: nx, y: ny, dist: d };
+        }
+        px = bx; py = by;
+        break;
+      }
+      case 'Z': { px = sx; py = sy; break; }
+      case 'C': px = c.args[4]; py = c.args[5]; break;
+      case 'S': case 'Q': px = c.args[2]; py = c.args[3]; break;
+      case 'T': px = c.args[0]; py = c.args[1]; break;
+      case 'A': px = c.args[5]; py = c.args[6]; break;
+      case 'H': px = c.args[0]; break;
+      case 'V': py = c.args[0]; break;
+    }
+  }
+  // Only insert if the click lands close enough to a segment (in local
+  // units). ~4 units at default zoom is generous but still requires intent.
+  if (!best || best.dist > 4) return false;
+  markBaseline();
+  const inserted = { cmd: 'L', args: [snapV(best.x), snapV(best.y)] };
+  cmds.splice(best.cmdIdx, 0, inserted);
+  const newD = serializePathData(cmds);
+  const srcEl = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
+  if (srcEl) srcEl.setAttribute('d', newD);
+  editState.el.setAttribute('d', newD);
+  // Refresh editState (indices shifted) and select the new anchor so the
+  // user can drag it right away.
+  const refreshedAnchors = extractPathAnchors(cmds);
+  editState.anchors = refreshedAnchors;
+  const newAnchorIdx = refreshedAnchors.findIndex(a => a.i === best.cmdIdx);
+  state.selectedAnchors.clear();
+  if (newAnchorIdx >= 0) state.selectedAnchors.add(newAnchorIdx);
+  renderHandles();
+  renderProps();
+  commitIfChanged();
+  return true;
+}
+
+function selectAllAnchors() {
+  if (!editState) return;
+  state.selectedAnchors.clear();
+  editState.anchors.forEach((_, i) => state.selectedAnchors.add(i));
+  renderHandles();
+  renderProps();
+}
+
+// Rubber-band select. Draws a dashed rectangle from the pointer-down point
+// and, on release, selects every anchor whose screen position falls inside
+// it. Shift/Ctrl/Cmd held at drag start makes the marquee additive — the
+// prior anchor selection is preserved and the marquee's hits are unioned
+// into it. A drag under a small threshold is treated as a plain click and
+// clears the selection instead (matches Figma).
+function beginAnchorMarquee(startEv) {
+  if (!editState) return;
+  const wrapRect = canvasWrap.getBoundingClientRect();
+  const startX = startEv.clientX - wrapRect.left;
+  const startY = startEv.clientY - wrapRect.top;
+  const additive = startEv.shiftKey || startEv.metaKey || startEv.ctrlKey;
+  const baseSelection = additive ? new Set(state.selectedAnchors) : new Set();
+
+  // Precompute each anchor's position in wrap-relative screen coords so
+  // hit-tests during move are just number comparisons.
+  const el = editState.el;
+  const svg = el.ownerSVGElement || currentCanvasSvg();
+  const ctm = el.getScreenCTM();
+  const anchorScreens = [];
+  if (ctm) {
+    editState.anchors.forEach((a, idx) => {
+      const pt = svg.createSVGPoint();
+      pt.x = a.x; pt.y = a.y;
+      const p = pt.matrixTransform(ctm);
+      anchorScreens.push({ idx, x: p.x - wrapRect.left, y: p.y - wrapRect.top });
+    });
+  }
+
+  let marqueeEl = null;
+  let moved = false;
+  const THRESH = 3;
+
+  function move(ev) {
+    const cx = ev.clientX - wrapRect.left;
+    const cy = ev.clientY - wrapRect.top;
+    if (!moved) {
+      if (Math.abs(cx - startX) < THRESH && Math.abs(cy - startY) < THRESH) return;
+      moved = true;
+      marqueeEl = document.createElement('div');
+      marqueeEl.className = 'marquee';
+      handlesEl.appendChild(marqueeEl);
+    }
+    const left = Math.min(startX, cx);
+    const top = Math.min(startY, cy);
+    const w = Math.abs(cx - startX);
+    const h = Math.abs(cy - startY);
+    marqueeEl.style.left = left + 'px';
+    marqueeEl.style.top = top + 'px';
+    marqueeEl.style.width = w + 'px';
+    marqueeEl.style.height = h + 'px';
+
+    // Live selection so the user sees the highlights update as they drag.
+    // Avoid rebuilding handles (would drop the marquee div) — just toggle
+    // the `.selected` class on the existing anchor dots.
+    const newSel = new Set(baseSelection);
+    for (const a of anchorScreens) {
+      if (a.x >= left && a.x <= left + w && a.y >= top && a.y <= top + h) newSel.add(a.idx);
+    }
+    state.selectedAnchors = newSel;
+    handlesEl.querySelectorAll('.anchor').forEach(dot => {
+      const i = parseInt(dot.dataset.anchor, 10);
+      dot.classList.toggle('selected', newSel.has(i));
+    });
+  }
+  function up() {
+    window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', up);
+    if (marqueeEl) marqueeEl.remove();
+    if (!moved && !additive) {
+      // Plain click on empty space — clear the selection (unless the user
+      // was trying to extend it with Shift, in which case leave it alone).
+      state.selectedAnchors.clear();
+    }
+    renderHandles();
+    renderProps();
+  }
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+}
+
 // ---- Selection handles overlay ----
 function renderHandles() {
   handlesEl.innerHTML = '';
-  if (state.selectedEl === null) { hideQuickActions(); return; }
+  if (state.selectedEls.size === 0) { hideQuickActions(); return; }
   const svg = currentCanvasSvg();
   if (!svg) { hideQuickActions(); return; }
+
+  // Multi-selection: draw a single union border (no resize handles, no
+  // quick-actions popover — those operate on one shape at a time).
+  if (state.selectedEls.size > 1) {
+    hideQuickActions();
+    const wrapRect = canvasWrap.getBoundingClientRect();
+    let uL = Infinity, uT = Infinity, uR = -Infinity, uB = -Infinity;
+    for (const idx of state.selectedEls) {
+      const shape = svg.querySelector(`[data-idx="${idx}"]`);
+      if (!shape) continue;
+      const r = shape.getBoundingClientRect();
+      if (!r.width && !r.height) continue;
+      uL = Math.min(uL, r.left);
+      uT = Math.min(uT, r.top);
+      uR = Math.max(uR, r.right);
+      uB = Math.max(uB, r.bottom);
+      // Also draw a thin per-shape indicator so users see what's picked.
+      const sub = document.createElement('div');
+      sub.className = 'sel-border';
+      sub.style.left = (r.left - wrapRect.left) + 'px';
+      sub.style.top = (r.top - wrapRect.top) + 'px';
+      sub.style.width = r.width + 'px';
+      sub.style.height = r.height + 'px';
+      sub.style.opacity = '0.4';
+      handlesEl.appendChild(sub);
+    }
+    if (isFinite(uL)) {
+      const outer = document.createElement('div');
+      outer.className = 'sel-border';
+      outer.style.left = (uL - wrapRect.left - 2) + 'px';
+      outer.style.top = (uT - wrapRect.top - 2) + 'px';
+      outer.style.width = (uR - uL + 4) + 'px';
+      outer.style.height = (uB - uT + 4) + 'px';
+      outer.style.borderStyle = 'dashed';
+      handlesEl.appendChild(outer);
+      const label = document.createElement('div');
+      label.className = 'm-label';
+      label.textContent = `${state.selectedEls.size} shapes`;
+      label.style.left = (uL - wrapRect.left + (uR - uL) / 2) + 'px';
+      label.style.top = (uB - wrapRect.top + 8) + 'px';
+      handlesEl.appendChild(label);
+    }
+    return;
+  }
+
   const el = svg.querySelector(`[data-idx="${state.selectedEl}"]`);
   if (!el) { hideQuickActions(); return; }
 
@@ -500,6 +1161,15 @@ function renderHandles() {
     return;
   }
 
+  // Locked shape: show only the selection border (no resize handles, no
+  // quick-actions popover) so the user can see what's selected but can't
+  // accidentally reshape it. Unlock via the props panel or tree.
+  if (isLocked(el)) {
+    border.style.borderStyle = 'dashed';
+    border.style.borderColor = '#eab308';
+    return;
+  }
+
   // Corner handles on the axis-aligned box (interactive: drag to resize)
   const cornerPts = [
     { x: left, y: top, id: 'tl' },
@@ -530,6 +1200,9 @@ function renderHandles() {
 
 // ---- Tools palette ----
 function setTool(tool) {
+  // Switching tool mid-pen: finish the current path so the user's work
+  // isn't lost. If they wanted to cancel, Escape does that explicitly.
+  if (penCtx && tool !== 'pen') finishPen(false);
   state.tool = tool;
   paletteEl.querySelectorAll('button[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
   updateCanvasCursor();
@@ -538,8 +1211,18 @@ paletteEl.querySelectorAll('button[data-tool]').forEach(btn => btn.addEventListe
 
 // ---- Canvas pointerdown ----
 function onCanvasPointerDown(e) {
+  // Pen / pencil tools ignore existing shapes so users can draw over
+  // crowded artwork without accidentally selecting something underneath.
+  if (state.tool === 'pen') { beginPenPoint(e); return; }
+  if (state.tool === 'pencil') { beginPencil(e); return; }
   if (e.target.closest('[data-shape]')) return;
-  if (state.tool === 'select') { selectElement(null); return; }
+  if (state.tool === 'select') {
+    // In path-edit mode, empty-space press starts a marquee. A drag selects
+    // anchors inside the box; a click without movement clears the selection.
+    if (state.editingPath) { beginAnchorMarquee(e); return; }
+    selectElement(null);
+    return;
+  }
   beginDraw(e);
 }
 
@@ -598,10 +1281,33 @@ redoBtn.addEventListener('click', redo);
 // ---- Shape drag ----
 let dragCtx = null;
 function onShapePointerDown(e) {
+  // Pen / pencil taps through shapes so a click over existing artwork
+  // still adds a point / starts a stroke instead of selecting the shape.
+  if (state.tool === 'pen') { beginPenPoint(e); e.stopPropagation(); return; }
+  if (state.tool === 'pencil') { beginPencil(e); e.stopPropagation(); return; }
   e.stopPropagation();
   if (state.tool !== 'select') return;
   const idx = e.currentTarget.getAttribute('data-idx');
-  selectElement(idx);
+  // Shift/Ctrl/Cmd-click adds or removes the shape from the multi-selection
+  // and never starts a drag.
+  if (e.shiftKey || e.metaKey || e.ctrlKey) {
+    toggleSelectElement(idx);
+    return;
+  }
+  // Locked shapes shouldn't start a drag. (CSS pointer-events:none already
+  // prevents this in most cases, but keep the guard for direct callers.)
+  if (isLocked(idx)) { selectElement(idx); return; }
+  // In path-edit mode, clicking on the shape body of the path we're editing
+  // starts a marquee — so users can rubber-band anchors that live inside
+  // the shape's own bounds without having to reach the outer empty space.
+  if (state.editingPath && String(state.selectedEl) === String(idx)) {
+    beginAnchorMarquee(e);
+    return;
+  }
+  // Clicking a shape that's part of a bigger selection collapses to just
+  // that shape (matching Figma/Illustrator). If it's already the sole
+  // selection this is a no-op.
+  if (!state.selectedEls.has(String(idx)) || state.selectedEls.size > 1) selectElement(idx);
   const svg = currentCanvasSvg();
   const pt = clientToSvg(svg, e.clientX, e.clientY);
   const el = e.currentTarget;
@@ -616,8 +1322,10 @@ function onShapePointerMove(e) {
   if (!dragCtx) return;
   const svg = currentCanvasSvg();
   const pt = clientToSvg(svg, e.clientX, e.clientY);
-  const nx = dragCtx.baseTx + (pt.x - dragCtx.startX);
-  const ny = dragCtx.baseTy + (pt.y - dragCtx.startY);
+  let nx = dragCtx.baseTx + (pt.x - dragCtx.startX);
+  let ny = dragCtx.baseTy + (pt.y - dragCtx.startY);
+  // Alt bypasses snap for fine-grained placement.
+  if (!e.altKey) { nx = snapV(nx); ny = snapV(ny); }
   setTranslate(dragCtx.el, nx, ny);
   syncElementToDoc(dragCtx.el);
   renderProps();
@@ -654,6 +1362,7 @@ function onHandlePointerDown(corner, e) {
   e.stopPropagation();
   e.preventDefault();
   if (state.selectedEl === null) return;
+  if (selectionLocked()) { showToast('Locked'); return; }
   const canvas = currentCanvasSvg();
   const src = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
   const live = canvas?.querySelector(`[data-idx="${state.selectedEl}"]`);
@@ -696,8 +1405,9 @@ function onResizeMove(e) {
   const raw = clientToSvg(canvas, e.clientX, e.clientY);
   let { bbox, anchorX, anchorY, offsetX, offsetY, aspect, src, live } = resizeCtx;
   // Snap the drag corner to (cursor + captured click offset) so it lines up
-  // exactly with where the handle was grabbed.
-  const pt = { x: raw.x + offsetX, y: raw.y + offsetY };
+  // exactly with where the handle was grabbed. Alt bypasses snap.
+  let pt = { x: raw.x + offsetX, y: raw.y + offsetY };
+  if (!e.altKey) pt = snapPt(pt);
 
   let dx = pt.x - anchorX;
   let dy = pt.y - anchorY;
@@ -795,7 +1505,8 @@ function isDegenerate(tool, start, current) {
 }
 function beginDraw(e) {
   const canvas = currentCanvasSvg();
-  const pt = clientToSvg(canvas, e.clientX, e.clientY);
+  const raw = clientToSvg(canvas, e.clientX, e.clientY);
+  const pt = e.altKey ? raw : snapPt(raw);
   markBaseline();
   const el = createDrawElement(state.tool, pt);
   if (!el) { pendingBaseline = null; return; }
@@ -812,13 +1523,233 @@ function onDrawMove(e) {
   if (!drawCtx) return;
   const canvas = currentCanvasSvg();
   if (!canvas) return;
-  const pt = clientToSvg(canvas, e.clientX, e.clientY);
+  const raw = clientToSvg(canvas, e.clientX, e.clientY);
+  let pt = e.altKey ? raw : snapPt(raw);
+  // Shift constrains to perfect square / circle / 45° line while drawing.
+  if (e.shiftKey) pt = applyShiftConstrain(drawCtx.tool, drawCtx.startPt, pt);
   const src = state.svgDoc.querySelector(`[data-idx="${drawCtx.idx}"]`);
   const live = canvas.querySelector(`[data-idx="${drawCtx.idx}"]`);
   if (src) updateDrawShape(src, drawCtx.tool, drawCtx.startPt, pt);
   if (live) updateDrawShape(live, drawCtx.tool, drawCtx.startPt, pt);
   renderProps();
   renderHandles();
+}
+// ---- Pen tool ----
+// Click to add points to a growing polyline; Enter or double-click ends
+// the path open; Z closes it; Escape cancels. Points snap to the grid
+// unless Alt is held, and Shift constrains each new segment to 45°
+// relative to the previous point.
+let penCtx = null;
+function beginPenPoint(e) {
+  const canvas = currentCanvasSvg();
+  const raw = clientToSvg(canvas, e.clientX, e.clientY);
+  let pt = e.altKey ? raw : snapPt(raw);
+  if (penCtx && e.shiftKey && penCtx.points.length > 0) {
+    const last = penCtx.points[penCtx.points.length - 1];
+    pt = applyShiftConstrain('line', last, pt);
+  }
+  if (!penCtx) {
+    markBaseline();
+    const p = state.svgDoc.ownerDocument.createElementNS(SVG_NS, 'path');
+    p.setAttribute('d', `M${pt.x} ${pt.y}`);
+    p.setAttribute('fill', 'none');
+    p.setAttribute('stroke', 'currentColor');
+    p.setAttribute('stroke-width', '1');
+    const idx = nextIdx();
+    tagShape(p, idx);
+    state.svgDoc.appendChild(p);
+    penCtx = { points: [pt], idx };
+    mountCanvas();
+    selectElement(idx);
+  } else {
+    penCtx.points.push(pt);
+    updatePenPreview();
+  }
+}
+function updatePenPreview() {
+  if (!penCtx) return;
+  const d = penCtx.points.map((p, i) => (i === 0 ? 'M' : 'L') + `${p.x} ${p.y}`).join(' ');
+  const src = state.svgDoc.querySelector(`[data-idx="${penCtx.idx}"]`);
+  if (src) src.setAttribute('d', d);
+  const live = currentCanvasSvg()?.querySelector(`[data-idx="${penCtx.idx}"]`);
+  if (live) live.setAttribute('d', d);
+  renderHandles();
+}
+function finishPen(close) {
+  if (!penCtx) return;
+  const idx = penCtx.idx;
+  if (penCtx.points.length < 2) {
+    // Not enough points — discard the placeholder path and roll back the
+    // baseline so it doesn't clutter undo history.
+    state.svgDoc.querySelector(`[data-idx="${idx}"]`)?.remove();
+    pendingBaseline = null;
+    penCtx = null;
+    state.selectedEls.clear();
+    state.selectedEl = null;
+    mountCanvas();
+    renderTree();
+    renderProps();
+    return;
+  }
+  const src = state.svgDoc.querySelector(`[data-idx="${idx}"]`);
+  if (close && src) {
+    src.setAttribute('d', (src.getAttribute('d') || '') + ' Z');
+    // Closed paths look better filled — flip stroke to currentColor fill.
+    src.setAttribute('fill', 'currentColor');
+    src.removeAttribute('stroke');
+    src.removeAttribute('stroke-width');
+  }
+  penCtx = null;
+  mountCanvas();
+  renderTree();
+  renderProps();
+  renderHandles();
+  commitIfChanged();
+  setTool('select');
+}
+function cancelPen() {
+  if (!penCtx) return;
+  state.svgDoc.querySelector(`[data-idx="${penCtx.idx}"]`)?.remove();
+  pendingBaseline = null;
+  penCtx = null;
+  state.selectedEls.clear();
+  state.selectedEl = null;
+  mountCanvas();
+  renderTree();
+  renderProps();
+}
+
+// ---- Pencil tool (freehand) ----
+// Press and drag to draw a polyline path that tracks the cursor. Points
+// are sampled at a distance threshold so a slow drag doesn't produce a
+// megabyte of near-identical anchors. On release the path is auto-
+// simplified (using the same near-collinear removal as the anchor panel's
+// "Simplify" button) to keep the resulting SVG lean.
+let pencilCtx = null;
+const PENCIL_MIN_STEP = 1.2; // viewBox units between sampled points
+function beginPencil(e) {
+  const canvas = currentCanvasSvg();
+  const raw = clientToSvg(canvas, e.clientX, e.clientY);
+  const pt = e.altKey ? raw : snapPt(raw);
+  markBaseline();
+  const p = state.svgDoc.ownerDocument.createElementNS(SVG_NS, 'path');
+  p.setAttribute('d', `M${pt.x} ${pt.y}`);
+  p.setAttribute('fill', 'none');
+  p.setAttribute('stroke', 'currentColor');
+  p.setAttribute('stroke-width', '1');
+  p.setAttribute('stroke-linecap', 'round');
+  p.setAttribute('stroke-linejoin', 'round');
+  const idx = nextIdx();
+  tagShape(p, idx);
+  state.svgDoc.appendChild(p);
+  pencilCtx = { points: [pt], idx, altAtStart: !!e.altKey };
+  mountCanvas();
+  selectElement(idx);
+  window.addEventListener('pointermove', onPencilMove);
+  window.addEventListener('pointerup', onPencilEnd, { once: true });
+}
+function onPencilMove(e) {
+  if (!pencilCtx) return;
+  const canvas = currentCanvasSvg();
+  if (!canvas) return;
+  const raw = clientToSvg(canvas, e.clientX, e.clientY);
+  // Snap while drawing feels wrong for pencil (it forces zig-zag stair
+  // steps); only snap the very first and last points instead. Alt bypass
+  // still applies for consistency with other tools.
+  const pt = raw;
+  const last = pencilCtx.points[pencilCtx.points.length - 1];
+  if (Math.hypot(pt.x - last.x, pt.y - last.y) < PENCIL_MIN_STEP) return;
+  pencilCtx.points.push(pt);
+  const d = pencilCtx.points.map((p, i) => (i === 0 ? 'M' : 'L') + `${p.x.toFixed(3)} ${p.y.toFixed(3)}`).join(' ');
+  const src = state.svgDoc.querySelector(`[data-idx="${pencilCtx.idx}"]`);
+  if (src) src.setAttribute('d', d);
+  const live = canvas.querySelector(`[data-idx="${pencilCtx.idx}"]`);
+  if (live) live.setAttribute('d', d);
+}
+function onPencilEnd(e) {
+  window.removeEventListener('pointermove', onPencilMove);
+  if (!pencilCtx) return;
+  const canvas = currentCanvasSvg();
+  const raw = canvas ? clientToSvg(canvas, e.clientX, e.clientY) : null;
+  if (raw) {
+    const endPt = pencilCtx.altAtStart || e.altKey ? raw : snapPt(raw);
+    pencilCtx.points.push(endPt);
+  }
+  const idx = pencilCtx.idx;
+  if (pencilCtx.points.length < 2) {
+    // Just a click — throw away the placeholder path so it doesn't leave
+    // an invisible zero-length dot on the canvas.
+    state.svgDoc.querySelector(`[data-idx="${idx}"]`)?.remove();
+    pendingBaseline = null;
+    state.selectedEls.clear();
+    state.selectedEl = null;
+    pencilCtx = null;
+    mountCanvas();
+    renderTree();
+    renderProps();
+    return;
+  }
+  // Auto-simplify: run one pass of near-collinear removal so the stroke
+  // is smooth without hundreds of redundant anchors.
+  const pts = simplifyPolyline(pencilCtx.points, 0.5);
+  const d = pts.map((p, i) => (i === 0 ? 'M' : 'L') + `${p.x.toFixed(3)} ${p.y.toFixed(3)}`).join(' ');
+  const src = state.svgDoc.querySelector(`[data-idx="${idx}"]`);
+  if (src) src.setAttribute('d', d);
+  pencilCtx = null;
+  mountCanvas();
+  renderTree();
+  renderProps();
+  renderHandles();
+  commitIfChanged();
+  setTool('select');
+}
+// Ramer–Douglas–Peucker polyline simplification. `tolerance` is the max
+// perpendicular distance (in viewBox units) a point can lie from the
+// straight segment between its neighbours before it gets dropped.
+function simplifyPolyline(points, tolerance) {
+  if (points.length < 3) return points.slice();
+  const sqTol = tolerance * tolerance;
+  const keep = new Array(points.length).fill(false);
+  keep[0] = true; keep[points.length - 1] = true;
+  const stack = [[0, points.length - 1]];
+  while (stack.length) {
+    const [lo, hi] = stack.pop();
+    let maxSq = 0, idx = -1;
+    const a = points[lo], b = points[hi];
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len2 = dx * dx + dy * dy || 1;
+    for (let i = lo + 1; i < hi; i++) {
+      const p = points[i];
+      const num = dy * p.x - dx * p.y + b.x * a.y - b.y * a.x;
+      const dSq = (num * num) / len2;
+      if (dSq > maxSq) { maxSq = dSq; idx = i; }
+    }
+    if (maxSq > sqTol && idx > -1) {
+      keep[idx] = true;
+      stack.push([lo, idx]);
+      stack.push([idx, hi]);
+    }
+  }
+  return points.filter((_, i) => keep[i]);
+}
+
+// Constrain a draw endpoint given the current tool and the start point.
+// Rect/ellipse become squares/circles; line snaps to nearest 45°.
+function applyShiftConstrain(tool, start, current) {
+  const dx = current.x - start.x;
+  const dy = current.y - start.y;
+  if (tool === 'rect' || tool === 'ellipse') {
+    const d = Math.max(Math.abs(dx), Math.abs(dy));
+    return { x: start.x + Math.sign(dx || 1) * d, y: start.y + Math.sign(dy || 1) * d };
+  }
+  if (tool === 'line') {
+    const ang = Math.atan2(dy, dx);
+    const step = Math.PI / 4;
+    const snapAng = Math.round(ang / step) * step;
+    const len = Math.hypot(dx, dy);
+    return { x: start.x + Math.cos(snapAng) * len, y: start.y + Math.sin(snapAng) * len };
+  }
+  return current;
 }
 function onDrawEnd(e) {
   window.removeEventListener('pointermove', onDrawMove);
@@ -854,10 +1785,15 @@ function renderTree() {
   shapes.forEach(el => {
     const idx = el.getAttribute('data-idx');
     const tag = el.tagName.toLowerCase();
+    const locked = isLocked(el);
     const node = document.createElement('div');
-    node.className = 'tree-node' + (idx === String(state.selectedEl) ? ' selected' : '');
-    node.innerHTML = `<span class="idx">${String(idx).padStart(2, '0')}</span><span class="material-symbols-outlined" style="font-size:14px;">${TAG_ICONS[tag] || 'category'}</span><span>${tag}</span>`;
-    node.addEventListener('click', () => selectElement(idx));
+    node.className = 'tree-node' + (idx === String(state.selectedEl) ? ' selected' : '') + (locked ? ' locked' : '');
+    node.innerHTML = `<span class="idx">${String(idx).padStart(2, '0')}</span><span class="material-symbols-outlined" style="font-size:14px;">${TAG_ICONS[tag] || 'category'}</span><span class="flex-1">${tag}</span><button class="lock-btn material-symbols-outlined" style="font-size:14px;" title="${locked ? 'Unlock' : 'Lock'}">${locked ? 'lock' : 'lock_open'}</button>`;
+    node.addEventListener('click', (e) => {
+      if (e.target.closest('.lock-btn')) { e.stopPropagation(); toggleLock(idx); return; }
+      if (e.shiftKey || e.metaKey || e.ctrlKey) toggleSelectElement(idx);
+      else selectElement(idx);
+    });
     frag.appendChild(node);
   });
   treeEl.replaceChildren(frag);
@@ -890,7 +1826,40 @@ function paste(offset = 10) {
   commitIfChanged();
   showToast('Pasted');
 }
-function duplicateSelection() { if (state.selectedEl === null) return; copySelection(); paste(); }
+function duplicateSelection() {
+  if (state.selectedEls.size === 0) return;
+  if (state.selectedEls.size === 1) {
+    if (selectionLocked()) { showToast('Locked'); return; }
+    copySelection();
+    paste();
+    return;
+  }
+  // Multi: duplicate each shape independently, then leave the new copies
+  // as the selection so the user can move them as a group.
+  markBaseline();
+  const offset = 10;
+  const newIdxs = [];
+  for (const idx of state.selectedEls) {
+    if (isLocked(idx)) continue;
+    const src = state.svgDoc.querySelector(`[data-idx="${idx}"]`);
+    if (!src) continue;
+    const clone = src.cloneNode(true);
+    const newIdx = nextIdx();
+    tagShape(clone, newIdx);
+    const existingT = clone.getAttribute('transform') || '';
+    clone.setAttribute('transform', `translate(${offset}, ${offset}) ${existingT}`.trim());
+    src.parentNode.appendChild(clone);
+    newIdxs.push(newIdx);
+  }
+  state.selectedEls.clear();
+  newIdxs.forEach(i => state.selectedEls.add(i));
+  state.selectedEl = newIdxs[newIdxs.length - 1] ?? null;
+  mountCanvas();
+  renderTree();
+  renderProps();
+  commitIfChanged();
+  showToast(`Duplicated ${newIdxs.length}`);
+}
 
 // Ctrl+V dispatch: internal shape clipboard wins; otherwise try the OS
 // clipboard for raw SVG markup (from a Figma copy-as-SVG, another editor,
@@ -944,15 +1913,149 @@ function importSvgText(text) {
   return true;
 }
 function deleteSelection() {
-  if (state.selectedEl === null) return;
+  if (state.selectedEls.size === 0) return;
+  const targets = Array.from(state.selectedEls).filter(idx => !isLocked(idx));
+  if (targets.length === 0) { showToast('Locked — cannot delete'); return; }
   markBaseline();
-  state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`)?.remove();
+  targets.forEach(idx => {
+    state.svgDoc.querySelector(`[data-idx="${idx}"]`)?.remove();
+    state.selectedEls.delete(idx);
+  });
   state.selectedEl = null;
   mountCanvas();
   renderTree();
   renderProps();
   commitIfChanged();
 }
+// Wrap the current selection (one or more shapes) in a single <g>. All
+// selected shapes must share a common parent, which is true for typical
+// icons (shapes live directly under the root <svg>). Grouping preserves
+// DOM order so the visual stack is unchanged.
+function groupSelection() {
+  if (state.selectedEls.size === 0) return;
+  const els = Array.from(state.selectedEls)
+    .map(i => state.svgDoc.querySelector(`[data-idx="${i}"]`))
+    .filter(Boolean);
+  if (els.length === 0) return;
+  const parent = els[0].parentNode;
+  if (!els.every(e => e.parentNode === parent)) {
+    showToast('Grouped shapes must share a parent');
+    return;
+  }
+  // Sort by DOM position so we can preserve stacking order inside the group.
+  els.sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1);
+  markBaseline();
+  const g = state.svgDoc.ownerDocument.createElementNS(SVG_NS, 'g');
+  const idx = nextIdx();
+  tagShape(g, idx);
+  parent.insertBefore(g, els[els.length - 1]);
+  for (const el of els) {
+    // Strip each child's shape tag so it becomes "part of" the group;
+    // fresh idxs would be issued on ungroup.
+    el.removeAttribute('data-shape');
+    el.removeAttribute('data-idx');
+    g.appendChild(el);
+  }
+  state.selectedEls.clear();
+  state.selectedEls.add(idx);
+  state.selectedEl = idx;
+  mountCanvas();
+  renderTree();
+  renderProps();
+  commitIfChanged();
+}
+// Merge the current selection (2+ shapes) into a single <path>. Each source
+// shape is converted to path-data via shapeToPathData if it isn't already
+// a path, then their `d` strings are concatenated — each subpath keeps its
+// own M so they remain visually independent. Styling is inherited from the
+// bottommost (first in DOM order) shape; the merged path replaces all of
+// them at that position in the stack.
+//
+// Caveat: transforms on individual source shapes aren't folded into the
+// merged geometry. If a shape has a translate/scale/rotate, its subpath
+// won't move with it after merging. Users should "Clear transform" or
+// flatten first for a clean result — we surface this as a warning toast.
+function mergeSelectedPaths() {
+  if (state.selectedEls.size < 2) { showToast('Select 2+ shapes to merge'); return; }
+  const els = Array.from(state.selectedEls)
+    .map(i => state.svgDoc.querySelector(`[data-idx="${i}"]`))
+    .filter(Boolean);
+  if (els.length < 2) return;
+  // Sort by DOM order so the bottom-of-stack shape provides styling.
+  els.sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1);
+  let hadTransforms = false;
+  const parts = [];
+  for (const el of els) {
+    if (el.getAttribute('transform')) hadTransforms = true;
+    let d;
+    const tag = el.tagName.toLowerCase();
+    if (tag === 'path') d = el.getAttribute('d') || '';
+    else if (tag === 'g') { showToast('Ungroup before merging'); return; }
+    else d = shapeToPathData(el);
+    if (!d) continue;
+    parts.push(d.trim());
+  }
+  if (parts.length < 2) { showToast('Nothing to merge'); return; }
+  markBaseline();
+  const first = els[0];
+  const merged = state.svgDoc.ownerDocument.createElementNS(SVG_NS, 'path');
+  merged.setAttribute('d', parts.join(' '));
+  const skip = new Set(['x', 'y', 'width', 'height', 'rx', 'ry', 'cx', 'cy', 'r', 'x1', 'y1', 'x2', 'y2', 'points', 'd', 'data-idx', 'data-shape']);
+  for (const attr of first.attributes) {
+    if (skip.has(attr.name)) continue;
+    merged.setAttribute(attr.name, attr.value);
+  }
+  const parent = first.parentNode;
+  const idx = nextIdx();
+  tagShape(merged, idx);
+  parent.insertBefore(merged, first);
+  for (const el of els) el.remove();
+  state.selectedEls.clear();
+  state.selectedEls.add(idx);
+  state.selectedEl = idx;
+  mountCanvas();
+  renderTree();
+  renderProps();
+  commitIfChanged();
+  showToast(hadTransforms
+    ? `Merged ${els.length} (transforms not flattened)`
+    : `Merged ${els.length} shapes`);
+}
+
+// Promote the selected <g>'s children back to top-level shapes, tagged with
+// fresh idxs. Their combined transform is folded onto each child so the
+// visual result is preserved.
+function ungroupSelection() {
+  if (state.selectedEl === null) return;
+  const el = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
+  if (!el || el.tagName.toLowerCase() !== 'g') return;
+  const parent = el.parentNode;
+  if (!parent) return;
+  markBaseline();
+  const groupTransform = el.getAttribute('transform') || '';
+  const children = Array.from(el.children).filter(c => {
+    const tag = c.tagName.toLowerCase();
+    return ['path', 'rect', 'circle', 'ellipse', 'polygon', 'polyline', 'line', 'g'].includes(tag);
+  });
+  const newIdxs = [];
+  for (const child of children) {
+    if (groupTransform) {
+      const childT = child.getAttribute('transform') || '';
+      child.setAttribute('transform', `${groupTransform} ${childT}`.trim());
+    }
+    const idx = nextIdx();
+    tagShape(child, idx);
+    parent.insertBefore(child, el);
+    newIdxs.push(idx);
+  }
+  el.remove();
+  state.selectedEl = newIdxs[0] ?? null;
+  mountCanvas();
+  renderTree();
+  renderProps();
+  commitIfChanged();
+}
+
 function bringToFront() {
   if (state.selectedEl === null) return;
   const el = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
@@ -986,15 +2089,19 @@ toolDeleteBtn.addEventListener('click', deleteSelection);
 // ---- Nudge ----
 let nudgeTimer = null;
 function nudge(dx, dy) {
-  if (state.selectedEl === null) return;
-  const target = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
-  if (!target) return;
+  if (state.selectedEls.size === 0) return;
   if (!nudgeTimer) markBaseline();
   clearTimeout(nudgeTimer);
-  const cur = parseTranslate(target.getAttribute('transform') || '');
-  setTranslate(target, cur.x + dx, cur.y + dy);
-  const live = currentCanvasSvg()?.querySelector(`[data-idx="${state.selectedEl}"]`);
-  if (live) setTranslate(live, cur.x + dx, cur.y + dy);
+  const canvas = currentCanvasSvg();
+  for (const idx of state.selectedEls) {
+    if (isLocked(idx)) continue;
+    const target = state.svgDoc.querySelector(`[data-idx="${idx}"]`);
+    if (!target) continue;
+    const cur = parseTranslate(target.getAttribute('transform') || '');
+    setTranslate(target, cur.x + dx, cur.y + dy);
+    const live = canvas?.querySelector(`[data-idx="${idx}"]`);
+    if (live) setTranslate(live, cur.x + dx, cur.y + dy);
+  }
   renderProps(); renderHandles();
   nudgeTimer = setTimeout(() => { commitIfChanged(); nudgeTimer = null; }, 500);
 }
@@ -1010,11 +2117,15 @@ window.addEventListener('keydown', (e) => {
     if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
     if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); redo(); return; }
     if (!inInput) {
+      // Ctrl+A in path-edit mode = select every anchor.
+      if (k === 'a' && state.editingPath) { e.preventDefault(); selectAllAnchors(); return; }
       if (k === 'c') { e.preventDefault(); copySelection(); return; }
       if (k === 'v') { e.preventDefault(); pasteAny(); return; }
       if (k === 'd') { e.preventDefault(); duplicateSelection(); return; }
       if (k === ']') { e.preventDefault(); e.shiftKey ? bringToFront() : bringForward(); return; }
       if (k === '[') { e.preventDefault(); e.shiftKey ? sendToBack() : sendBackward(); return; }
+      if (k === 'g') { e.preventDefault(); e.shiftKey ? ungroupSelection() : groupSelection(); return; }
+      if (k === 'l' && e.shiftKey) { e.preventDefault(); toggleLock(); return; }
     }
     return;
   }
@@ -1027,21 +2138,65 @@ window.addEventListener('keydown', (e) => {
   }
   if (e.key === 'Escape' && state.editingPath) {
     e.preventDefault();
-    state.editingPath = false;
-    qaEditPath?.classList.remove('active');
-    renderHandles();
+    // First Escape clears the anchor selection if any; a second one exits
+    // path-edit mode. Matches Figma / Illustrator conventions.
+    if (state.selectedAnchors.size > 0) {
+      state.selectedAnchors.clear();
+      renderHandles();
+      renderProps();
+    } else {
+      state.editingPath = false;
+      qaEditPath?.classList.remove('active');
+      renderHandles();
+    }
     return;
   }
 
-  const toolKeys = { v: 'select', r: 'rect', o: 'ellipse', l: 'line' };
+  // Grid & snap toggles
+  if (e.key === 'g' && !e.shiftKey) { e.preventDefault(); state.grid = !state.grid; refreshGridSnapUI(); mountCanvas(); return; }
+  if (e.key === 'G' && e.shiftKey) { e.preventDefault(); state.snap = !state.snap; refreshGridSnapUI(); return; }
+  if (e.key === '?') { e.preventDefault(); helpDialog?.showModal(); return; }
+
+  // Pen tool control keys — only meaningful while a pen path is being built.
+  if (penCtx) {
+    if (e.key === 'Enter') { e.preventDefault(); finishPen(false); return; }
+    if (e.key === 'Escape') { e.preventDefault(); cancelPen(); return; }
+    if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); finishPen(true); return; }
+    if (e.key === 'Backspace' && penCtx.points.length > 1) {
+      e.preventDefault();
+      penCtx.points.pop();
+      updatePenPreview();
+      return;
+    }
+  }
+  const toolKeys = { v: 'select', r: 'rect', o: 'ellipse', l: 'line', p: 'pen', n: 'pencil' };
   if (toolKeys[e.key.toLowerCase()]) { e.preventDefault(); setTool(toolKeys[e.key.toLowerCase()]); return; }
-  if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteSelection(); return; }
-  if (e.key.startsWith('Arrow') && state.selectedEl !== null) {
+  if (e.key === 'Delete' || e.key === 'Backspace') {
     e.preventDefault();
-    const step = e.shiftKey ? 10 : 1;
+    // Path-edit mode with anchor(s) selected: delete just the anchors.
+    if (state.editingPath && state.selectedAnchors.size > 0) deleteSelectedAnchors();
+    else deleteSelection();
+    return;
+  }
+  if (e.key.startsWith('Arrow')) {
+    // Arrow step matches the grid unit while snap is on, so nudging
+    // preserves alignment. Shift = 10× step; Alt bypasses to 1 unit.
+    const base = state.snap ? (state.gridSize || 1) : 1;
+    const mult = e.shiftKey ? 10 : 1;
+    const step = e.altKey ? 1 : base * mult;
     const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
     const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
-    nudge(dx, dy);
+    // In path-edit mode with anchor(s) selected, arrow keys nudge just
+    // those anchors instead of translating the whole element.
+    if (state.editingPath && state.selectedAnchors.size > 0) {
+      e.preventDefault();
+      nudgeSelectedAnchors(dx, dy);
+      return;
+    }
+    if (state.selectedEl !== null) {
+      e.preventDefault();
+      nudge(dx, dy);
+    }
   }
 });
 
@@ -1119,6 +2274,35 @@ function renderProps() {
   const ih = svg.getAttribute('height') || '';
   const viewBox = svg.getAttribute('viewBox') || '';
 
+  // Multi-selection short-circuit: skip the per-shape editors and offer
+  // only bulk actions. Single-selection continues below as before.
+  if (state.selectedEls.size > 1) {
+    const n = state.selectedEls.size;
+    propsEl.innerHTML = `
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-5 h-5 bg-surface-container-highest rounded flex items-center justify-center"><span class="material-symbols-outlined" style="font-size:14px;">select</span></div>
+          <span class="font-semibold text-[13px] text-on-surface">${n} shapes</span>
+        </div>
+      </div>
+      <div class="rounded-lg px-3 py-2 border border-primary/30 bg-primary/5 text-[11px] text-on-surface-variant">Multi-select. Shift-click to add / remove shapes. Bulk operations below act on all selected.</div>
+      <div class="pt-4 border-t ui-border grid grid-cols-2 gap-2">
+        <button id="ps-group" class="py-2 bg-surface-container-highest hover:bg-surface-bright rounded-lg text-[11px] font-semibold text-on-surface border border-outline-variant flex items-center justify-center gap-1"><span class="material-symbols-outlined" style="font-size:14px;">folder</span>Group</button>
+        <button id="ps-merge" class="py-2 bg-surface-container-highest hover:bg-surface-bright rounded-lg text-[11px] font-semibold text-on-surface border border-outline-variant flex items-center justify-center gap-1"><span class="material-symbols-outlined" style="font-size:14px;">join_inner</span>Merge</button>
+        <button id="ps-duplicate" class="py-2 bg-surface-container-highest hover:bg-surface-bright rounded-lg text-[11px] font-semibold text-on-surface border border-outline-variant flex items-center justify-center gap-1"><span class="material-symbols-outlined" style="font-size:14px;">content_copy</span>Duplicate</button>
+        <button id="ps-lock" class="py-2 bg-surface-container-highest hover:bg-surface-bright rounded-lg text-[11px] font-semibold text-on-surface border border-outline-variant flex items-center justify-center gap-1"><span class="material-symbols-outlined" style="font-size:14px;">lock</span>Lock all</button>
+        <button id="ps-delete" class="col-span-2 py-2 bg-surface-container-highest hover:bg-error/10 hover:text-error rounded-lg text-[11px] font-semibold text-on-surface border border-outline-variant flex items-center justify-center gap-1"><span class="material-symbols-outlined" style="font-size:14px;">delete</span>Delete</button>
+      </div>`;
+    document.getElementById('ps-group').addEventListener('click', groupSelection);
+    document.getElementById('ps-merge').addEventListener('click', mergeSelectedPaths);
+    document.getElementById('ps-duplicate').addEventListener('click', duplicateSelection);
+    document.getElementById('ps-delete').addEventListener('click', deleteSelection);
+    document.getElementById('ps-lock').addEventListener('click', () => {
+      for (const i of Array.from(state.selectedEls)) toggleLock(i);
+    });
+    return;
+  }
+
   let target = null;
   if (state.selectedEl !== null) target = svg.querySelector(`[data-idx="${state.selectedEl}"]`);
 
@@ -1127,23 +2311,36 @@ function renderProps() {
   // Selection header
   const selName = target ? target.tagName.toLowerCase() : 'Icon';
   const selIcon = target ? (TAG_ICONS[selName] || 'category') : 'image';
+  const lockedNow = target ? isLocked(target) : false;
   html += `<div class="flex items-center justify-between">
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-2 min-w-0">
       <div class="w-5 h-5 bg-surface-container-highest rounded flex items-center justify-center">
         <span class="material-symbols-outlined" style="font-size:14px;">${selIcon}</span>
       </div>
       <span class="font-semibold text-[13px] text-on-surface">${selName}</span>
       ${target ? `<span class="text-[10px] font-mono text-on-surface-variant/50">#${state.selectedEl}</span>` : ''}
+      ${lockedNow ? `<span class="material-symbols-outlined text-yellow-500" style="font-size:14px;" title="Locked">lock</span>` : ''}
     </div>
     <div class="flex gap-1">
       ${target ? `
+        <button class="p-1.5 ${lockedNow ? 'text-yellow-500' : 'text-on-surface-variant'} hover:text-on-surface hover:bg-surface-container-highest rounded" id="p-lock" title="${lockedNow ? 'Unlock' : 'Lock'} (Ctrl+Shift+L)"><span class="material-symbols-outlined text-sm">${lockedNow ? 'lock' : 'lock_open'}</span></button>
         <button class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded" id="p-duplicate" title="Duplicate"><span class="material-symbols-outlined text-sm">content_copy</span></button>
         <button class="p-1.5 text-on-surface-variant hover:text-error hover:bg-error/10 rounded" id="p-remove" title="Remove"><span class="material-symbols-outlined text-sm">delete</span></button>
       ` : ''}
     </div>
   </div>`;
+  if (lockedNow) {
+    html += `<div class="rounded-lg px-3 py-2 border border-yellow-500/30 bg-yellow-500/5 text-[11px] text-on-surface-variant flex items-center gap-2">
+      <span class="material-symbols-outlined text-yellow-500" style="font-size:16px;">lock</span>
+      <span class="flex-1">This shape is locked. Unlock it to edit.</span>
+    </div>`;
+  }
 
   if (target) {
+    // Wrap all mutation controls in a fieldset so `disabled` cascades to
+    // every input/button inside when the shape is locked — no need to
+    // sprinkle `disabled` on individual controls.
+    html += `<fieldset id="p-mutable" class="space-y-5" ${lockedNow ? 'disabled' : ''} style="border:0; margin:0; padding:0; min-width:0;">`;
     const fill = target.getAttribute('fill') || 'currentColor';
     const stroke = target.getAttribute('stroke') || '';
     const strokeWidth = target.getAttribute('stroke-width') || '';
@@ -1216,6 +2413,11 @@ function renderProps() {
     </div>`;
 
     // Stroke
+    const linecap = target.getAttribute('stroke-linecap') || '';
+    const linejoin = target.getAttribute('stroke-linejoin') || '';
+    const dasharray = target.getAttribute('stroke-dasharray') || '';
+    const capOpt = (v) => `<option value="${v}" ${linecap === v ? 'selected' : ''}>${v || 'inherit'}</option>`;
+    const joinOpt = (v) => `<option value="${v}" ${linejoin === v ? 'selected' : ''}>${v || 'inherit'}</option>`;
     html += `<div class="space-y-2 pt-4 border-t ui-border">
       <div class="p-title">Stroke</div>
       <div class="input-field rounded-lg px-2 py-1.5 flex items-center gap-2">
@@ -1227,16 +2429,46 @@ function renderProps() {
         <div class="input-field rounded-lg px-3 py-2 flex items-center"><span class="text-on-surface-variant text-[11px] font-mono mr-2 w-4">W</span><input type="number" step="0.1" min="0" value="${strokeWidth}" id="p-stroke-w" /></div>
         <div class="input-field rounded-lg px-3 py-2 flex items-center"><span class="material-symbols-outlined text-sm text-on-surface-variant mr-2 w-4">opacity</span><input type="number" step="0.05" min="0" max="1" value="${opacity}" id="p-opacity" /></div>
       </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="input-field rounded-lg px-2 py-1.5 flex items-center gap-2" title="stroke-linecap"><span class="material-symbols-outlined text-sm text-on-surface-variant">line_end</span><select id="p-stroke-linecap" class="flex-1 bg-transparent text-[11px] font-mono outline-none">${capOpt('')}${capOpt('butt')}${capOpt('round')}${capOpt('square')}</select></div>
+        <div class="input-field rounded-lg px-2 py-1.5 flex items-center gap-2" title="stroke-linejoin"><span class="material-symbols-outlined text-sm text-on-surface-variant">join</span><select id="p-stroke-linejoin" class="flex-1 bg-transparent text-[11px] font-mono outline-none">${joinOpt('')}${joinOpt('miter')}${joinOpt('round')}${joinOpt('bevel')}${joinOpt('arcs')}${joinOpt('miter-clip')}</select></div>
+      </div>
+      <div class="input-field rounded-lg px-3 py-2 flex items-center" title="stroke-dasharray (e.g. 4 2)"><span class="material-symbols-outlined text-sm text-on-surface-variant mr-2 w-4">more_horiz</span><input type="text" value="${escapeAttr(dasharray)}" id="p-stroke-dash" placeholder="none / 4 2" class="font-mono text-[11px]" /></div>
     </div>`;
 
-    // Layer order
+    // Layer order + group / ungroup
+    const isGroup = target.tagName.toLowerCase() === 'g';
     html += `<div class="space-y-3 pt-4 border-t ui-border">
       <div class="p-title">Layer</div>
       <div class="grid grid-cols-4 gap-1 p-1 bg-surface-container-lowest rounded-lg border border-outline-variant">
         <button class="align-btn" id="p-to-back"   title="Send to back"><span class="material-symbols-outlined text-lg">vertical_align_bottom</span></button>
-        <button class="align-btn" id="p-backward"  title="Send backward"><span class="material-symbols-outlined text-lg">arrow_downward</span></button>
-        <button class="align-btn" id="p-forward"   title="Bring forward"><span class="material-symbols-outlined text-lg">arrow_upward</span></button>
+        <button class="align-btn" id="p-backward"  title="Send backward (Ctrl+[)"><span class="material-symbols-outlined text-lg">arrow_downward</span></button>
+        <button class="align-btn" id="p-forward"   title="Bring forward (Ctrl+])"><span class="material-symbols-outlined text-lg">arrow_upward</span></button>
         <button class="align-btn" id="p-to-front"  title="Bring to front"><span class="material-symbols-outlined text-lg">vertical_align_top</span></button>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <button id="p-group" class="py-1.5 bg-surface-container-highest hover:bg-surface-bright rounded-lg text-[11px] font-medium text-on-surface border border-outline-variant flex items-center justify-center gap-1" title="Group (Ctrl+G)"><span class="material-symbols-outlined" style="font-size:14px;">folder</span>Group</button>
+        <button id="p-ungroup" class="py-1.5 bg-surface-container-highest hover:bg-surface-bright rounded-lg text-[11px] font-medium text-on-surface border border-outline-variant flex items-center justify-center gap-1 ${isGroup ? '' : 'opacity-40'}" ${isGroup ? '' : 'disabled'} title="Ungroup (Ctrl+Shift+G)"><span class="material-symbols-outlined" style="font-size:14px;">folder_off</span>Ungroup</button>
+      </div>
+    </div>`;
+
+    // Convert primitive → path (only meaningful for non-path shapes)
+    const targetTag = target.tagName.toLowerCase();
+    if (['rect', 'circle', 'ellipse', 'line', 'polygon', 'polyline'].includes(targetTag)) {
+      html += `<div class="pt-4 border-t ui-border">
+        <button id="p-to-path" class="w-full py-2 bg-surface-container-highest hover:bg-surface-bright rounded-lg text-[11px] font-semibold text-on-surface border border-outline-variant flex items-center justify-center gap-1.5"><span class="material-symbols-outlined" style="font-size:14px;">polyline</span>Convert to path</button>
+      </div>`;
+    }
+
+    // Rotate + flip (applied around the shape's local center)
+    const rot = readRotation(target);
+    const flip = readFlip(target);
+    html += `<div class="space-y-2 pt-4 border-t ui-border">
+      <div class="p-title">Rotate &amp; Flip</div>
+      <div class="grid grid-cols-3 gap-2">
+        <div class="input-field rounded-lg px-3 py-2 flex items-center col-span-1"><span class="material-symbols-outlined text-sm text-on-surface-variant mr-2 w-4">rotate_right</span><input type="number" step="1" value="${rot}" id="p-rotate" placeholder="0°" class="font-mono text-[11px]" /></div>
+        <button class="align-btn ${flip.h ? 'tb-on' : ''}" id="p-flip-h" title="Flip horizontal"><span class="material-symbols-outlined text-lg">swap_horiz</span></button>
+        <button class="align-btn ${flip.v ? 'tb-on' : ''}" id="p-flip-v" title="Flip vertical"><span class="material-symbols-outlined text-lg">swap_vert</span></button>
       </div>
     </div>`;
 
@@ -1246,6 +2478,37 @@ function renderProps() {
       <div class="input-field rounded-lg px-3 py-2 flex items-center"><span class="material-symbols-outlined text-sm text-on-surface-variant mr-2 w-4">transform</span><input type="text" value="${escapeAttr(transform)}" id="p-transform" placeholder="translate(0,0)" class="font-mono text-[11px]" /></div>
       <button class="w-full py-1.5 bg-surface-container-highest hover:bg-surface-bright rounded-lg text-[11px] font-medium text-on-surface border border-outline-variant" id="p-clear-t">Clear transform</button>
     </div>`;
+
+    // Anchor panel — only in path-edit mode. Shows total anchor count and,
+    // when a single anchor is picked, editable X/Y and cmd type.
+    if (state.editingPath && editState) {
+      const anchors = editState.anchors || [];
+      const selCount = state.selectedAnchors.size;
+      const sole = selCount === 1 ? editState.anchors[state.selectedAnchors.values().next().value] : null;
+      html += `<div class="space-y-3 pt-4 border-t ui-border">
+        <div class="flex items-center justify-between">
+          <div class="p-title">Path Point${selCount === 1 ? '' : 's'}</div>
+          <span class="text-[10px] font-mono text-on-surface-variant/60">${selCount}/${anchors.length}</span>
+        </div>
+        <div class="grid grid-cols-3 gap-1">
+          <button id="ap-select-all" class="py-1.5 bg-surface-container-highest hover:bg-surface-bright rounded-lg text-[11px] text-on-surface border border-outline-variant">Select all</button>
+          <button id="ap-simplify" class="py-1.5 bg-surface-container-highest hover:bg-surface-bright rounded-lg text-[11px] text-on-surface border border-outline-variant" title="Remove collinear points">Simplify</button>
+          <button id="ap-delete" class="py-1.5 bg-surface-container-highest hover:bg-error/10 hover:text-error rounded-lg text-[11px] text-on-surface border border-outline-variant" ${selCount === 0 ? 'disabled' : ''}>Delete</button>
+        </div>
+        <div class="text-[10px] text-on-surface-variant/60">Double-click a segment to insert a new point.</div>`;
+      if (sole) {
+        html += `<div class="grid grid-cols-2 gap-3">
+          <div class="input-field rounded-lg px-3 py-2 flex items-center"><span class="text-on-surface-variant text-[11px] font-mono mr-2 w-4">X</span><input type="number" step="0.1" value="${sole.x.toFixed(3)}" id="ap-x" /></div>
+          <div class="input-field rounded-lg px-3 py-2 flex items-center"><span class="text-on-surface-variant text-[11px] font-mono mr-2 w-4">Y</span><input type="number" step="0.1" value="${sole.y.toFixed(3)}" id="ap-y" /></div>
+        </div>
+        <div class="text-[10px] font-mono text-on-surface-variant/60">Cmd <span class="text-on-surface">${sole.cmd}</span> · Point ${state.selectedAnchors.values().next().value + 1} of ${anchors.length}</div>`;
+      } else if (selCount === 0) {
+        html += `<div class="text-[11px] text-on-surface-variant/60 leading-relaxed">Click a point to select. Shift-click for multi-select. Arrow keys to nudge (Shift = 10). Delete to remove.</div>`;
+      }
+      html += `</div>`;
+    }
+    // Close the mutable fieldset opened right after the header.
+    html += `</fieldset>`;
   } else {
     html += `<div class="text-on-surface-variant/60 text-center py-6 leading-relaxed text-[11px]">
       Select a shape on the canvas or in the tree to edit its properties, or pick a draw tool from the palette to create a new shape.
@@ -1334,6 +2597,7 @@ function renderProps() {
   document.getElementById('p-icon-vb').addEventListener('input', e => setSvgAttr('viewBox', e.target.value));
 
   // Wire header action buttons (only present when a shape is selected)
+  document.getElementById('p-lock')?.addEventListener('click', () => toggleLock());
   document.getElementById('p-duplicate')?.addEventListener('click', duplicateSelection);
   document.getElementById('p-remove')?.addEventListener('click', deleteSelection);
 
@@ -1349,6 +2613,8 @@ function renderProps() {
   document.getElementById('p-to-back')?.addEventListener('click', sendToBack);
   document.getElementById('p-forward')?.addEventListener('click', bringForward);
   document.getElementById('p-backward')?.addEventListener('click', sendBackward);
+  document.getElementById('p-group')?.addEventListener('click', groupSelection);
+  document.getElementById('p-ungroup')?.addEventListener('click', ungroupSelection);
 
   // W/H dimension inputs — resize the selection to the target dimensions
   const wEl = document.getElementById('p-w');
@@ -1401,6 +2667,11 @@ function renderProps() {
   document.getElementById('p-stroke-color').addEventListener('input', e => { setAttr('stroke', e.target.value); renderProps(); });
   document.getElementById('p-stroke-w').addEventListener('input', e => setAttr('stroke-width', e.target.value));
   document.getElementById('p-opacity').addEventListener('input', e => setAttr('opacity', e.target.value));
+  document.getElementById('p-stroke-linecap')?.addEventListener('change', e => withEdit(() => setAttr('stroke-linecap', e.target.value)));
+  document.getElementById('p-stroke-linejoin')?.addEventListener('change', e => withEdit(() => setAttr('stroke-linejoin', e.target.value)));
+  document.getElementById('p-stroke-dash')?.addEventListener('input', e => setAttr('stroke-dasharray', e.target.value));
+  document.getElementById('p-stroke-dash')?.addEventListener('focus', markBaseline);
+  document.getElementById('p-stroke-dash')?.addEventListener('change', commitIfChanged);
   document.getElementById('p-tx').addEventListener('input', e => {
     const y = parseFloat(document.getElementById('p-ty').value) || 0;
     setTranslate(target, parseFloat(e.target.value) || 0, y);
@@ -1416,7 +2687,70 @@ function renderProps() {
     renderHandles();
   });
   document.getElementById('p-transform').addEventListener('input', e => { setAttr('transform', e.target.value); renderHandles(); });
-  document.getElementById('p-clear-t').addEventListener('click', () => withEdit(() => { setAttr('transform', null); renderProps(); renderHandles(); }));
+  document.getElementById('p-clear-t').addEventListener('click', () => withEdit(() => {
+    setAttr('transform', null);
+    target.removeAttribute('data-rotate');
+    target.removeAttribute('data-flip-h');
+    target.removeAttribute('data-flip-v');
+    renderProps(); renderHandles();
+  }));
+
+  // Rotate + flip
+  document.getElementById('p-rotate')?.addEventListener('focus', markBaseline);
+  document.getElementById('p-rotate')?.addEventListener('change', e => {
+    const live = currentCanvasSvg()?.querySelector(`[data-idx="${state.selectedEl}"]`);
+    setRotation(target, parseFloat(e.target.value) || 0);
+    if (live) setRotation(live, parseFloat(e.target.value) || 0);
+    renderHandles();
+    commitIfChanged();
+  });
+  document.getElementById('p-flip-h')?.addEventListener('click', () => withEdit(() => {
+    const flip = readFlip(target);
+    const live = currentCanvasSvg()?.querySelector(`[data-idx="${state.selectedEl}"]`);
+    setFlip(target, !flip.h, flip.v);
+    if (live) setFlip(live, !flip.h, flip.v);
+    renderProps(); renderHandles();
+  }));
+  document.getElementById('p-flip-v')?.addEventListener('click', () => withEdit(() => {
+    const flip = readFlip(target);
+    const live = currentCanvasSvg()?.querySelector(`[data-idx="${state.selectedEl}"]`);
+    setFlip(target, flip.h, !flip.v);
+    if (live) setFlip(live, flip.h, !flip.v);
+    renderProps(); renderHandles();
+  }));
+
+  // Anchor-panel wiring (only when in path-edit mode).
+  document.getElementById('ap-select-all')?.addEventListener('click', selectAllAnchors);
+  document.getElementById('ap-simplify')?.addEventListener('click', () => simplifySelectedPath());
+  document.getElementById('ap-delete')?.addEventListener('click', deleteSelectedAnchors);
+  document.getElementById('p-to-path')?.addEventListener('click', convertSelectionToPath);
+  const apX = document.getElementById('ap-x');
+  const apY = document.getElementById('ap-y');
+  if (apX && apY && editState && state.selectedAnchors.size === 1) {
+    const idx = state.selectedAnchors.values().next().value;
+    const commitAnchor = () => {
+      const a = editState.anchors[idx];
+      if (!a) return;
+      const nx = parseFloat(apX.value);
+      const ny = parseFloat(apY.value);
+      if (!isFinite(nx) || !isFinite(ny)) return;
+      markBaseline();
+      const ddx = nx - a.x;
+      const ddy = ny - a.y;
+      if (ddx === 0 && ddy === 0) { pendingBaseline = null; return; }
+      a.x = nx; a.y = ny;
+      if (a.xi != null) editState.cmds[a.i].args[a.xi] = nx;
+      if (a.yi != null) editState.cmds[a.i].args[a.yi] = ny;
+      const newD = serializePathData(editState.cmds);
+      const srcEl = state.svgDoc.querySelector(`[data-idx="${state.selectedEl}"]`);
+      if (srcEl) srcEl.setAttribute('d', newD);
+      editState.el.setAttribute('d', newD);
+      renderHandles();
+      commitIfChanged();
+    };
+    apX.addEventListener('change', commitAnchor);
+    apY.addEventListener('change', commitAnchor);
+  }
 }
 
 // ---- Toolbar ----
@@ -1535,6 +2869,7 @@ canvasMain?.addEventListener('pointerdown', (e) => {
   selectElement(null);
   if (state.editingPath) {
     state.editingPath = false;
+    state.selectedAnchors.clear();
     qaEditPath?.classList.remove('active');
     renderHandles();
   }
@@ -1556,6 +2891,10 @@ function serializeStudio() {
   clone.querySelectorAll('[data-shape]').forEach(el => {
     el.removeAttribute('data-shape');
     el.removeAttribute('data-idx');
+    el.removeAttribute('data-rotate');
+    el.removeAttribute('data-flip-h');
+    el.removeAttribute('data-flip-v');
+    el.removeAttribute('data-locked');
     el.classList.remove('selected');
     if (el.getAttribute('class') === '') el.removeAttribute('class');
   });
@@ -1741,6 +3080,28 @@ newBtnSm?.addEventListener('click', createNewIcon);
 
 // Re-position handles when the window resizes
 window.addEventListener('resize', renderHandles);
+
+// ---- Grid & snap toggles ----
+const gridBtn = document.getElementById('toggle-grid');
+const snapBtn = document.getElementById('toggle-snap');
+const gridSizeInput = document.getElementById('grid-size');
+const helpBtn = document.getElementById('show-help');
+const helpDialog = document.getElementById('help-dialog');
+function refreshGridSnapUI() {
+  gridBtn?.classList.toggle('tb-on', state.grid);
+  snapBtn?.classList.toggle('tb-on', state.snap);
+  if (gridSizeInput && document.activeElement !== gridSizeInput) gridSizeInput.value = String(state.gridSize);
+}
+gridBtn?.addEventListener('click', () => { state.grid = !state.grid; refreshGridSnapUI(); mountCanvas(); });
+snapBtn?.addEventListener('click', () => { state.snap = !state.snap; refreshGridSnapUI(); });
+gridSizeInput?.addEventListener('input', () => {
+  const v = parseFloat(gridSizeInput.value);
+  if (!isFinite(v) || v <= 0) return;
+  state.gridSize = v;
+  if (state.grid) mountCanvas();
+});
+helpBtn?.addEventListener('click', () => helpDialog?.showModal());
+refreshGridSnapUI();
 
 // ---- Boot ----
 (async () => {
