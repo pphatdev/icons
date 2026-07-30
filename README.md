@@ -34,11 +34,11 @@ pphat init ## Choose what you need to use (icon or other in the future)
 ```bash
 # Install icons
 
-pphat add <iconname> -f <format:{svg|nextjs|nuxtjs}>
+pphat add-icon <iconname> -f <format:{svg|nextjs|nuxtjs}>
 
 
 # Example
-pphat add facebook -f svg
+pphat add-icon facebook -f svg
 ```
 
 
