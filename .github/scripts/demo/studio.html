@@ -56,6 +56,7 @@
      below — never by the browser's default blue ring. */
   input, textarea, select, button {
     outline: none;
+    border: none;
     background: transparent;
     color: inherit;
     font: inherit;
@@ -126,8 +127,13 @@
   /* Path-anchor dots (node-edit mode) — use `#handles .anchor` so the same
      specificity pattern as `.handle` reliably beats `pointer-events: none`
      on the overlay container. */
-  #handles .anchor { position: absolute; width: 10px; height: 10px; background: #0d99ff; border: 1.5px solid white; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: auto; z-index: 6; cursor: move; box-shadow: 0 1px 4px rgba(0,0,0,0.5); }
-  #handles .anchor:hover { background: white; border-color: #0d99ff; transform: translate(-50%, -50%) scale(1.4); }
+  #handles .anchor { position: absolute; width: 10px; height: 10px; background: white; border: 1.5px solid #0d99ff; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: auto; z-index: 6; cursor: move; box-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+  #handles .anchor:hover { transform: translate(-50%, -50%) scale(1.3); }
+  #handles .anchor.selected { background: #0d99ff; border-color: white; box-shadow: 0 0 0 2px rgba(13,153,255,0.35), 0 1px 4px rgba(0,0,0,0.6); }
+  /* Marquee for rubber-band anchor selection */
+  #handles .marquee { position: absolute; border: 1px dashed #0d99ff; background: rgba(13,153,255,0.08); pointer-events: none; z-index: 7; }
+  /* Anchor coord badge */
+  .anchor-badge { position: absolute; background: #0d99ff; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-family: 'JetBrains Mono', monospace; font-weight: 600; transform: translate(-50%, -160%); z-index: 7; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.4); pointer-events: none; }
   .m-label { position: absolute; background: #0d99ff; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-family: 'JetBrains Mono', monospace; font-weight: 700; transform: translate(-50%, 0); z-index: 5; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
 
   /* Toast */
@@ -182,6 +188,16 @@
   .swatch.none, .preview-swatch.none { background: linear-gradient(135deg, transparent calc(50% - 1px), #ef4444 calc(50% - 1px), #ef4444 calc(50% + 1px), transparent calc(50% + 1px)), repeating-conic-gradient(#333 0% 25%, #444 0% 50%) 50% / 6px 6px; }
   .swatch.current, .preview-swatch.current { background: conic-gradient(from 180deg at 50% 50%, #ef4444 0deg, #eab308 60deg, #22c55e 120deg, #3b82f6 180deg, #a855f7 240deg, #ec4899 300deg, #ef4444 360deg); }
   .preview-swatch { width: 16px; height: 16px; }
+  kbd { display: inline-block; padding: 1px 6px; background: #262626; border: 1px solid #333; border-bottom-width: 2px; border-radius: 3px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; color: #e1e1e1; }
+  /* Locked shapes: still visible, but never receive pointer events on the
+     canvas. Selection is only possible via the layer tree, so users can
+     always get to the unlock control. */
+  #canvas [data-locked="1"] { pointer-events: none; }
+  .tree-node .lock-btn { margin-left: auto; opacity: 0.4; cursor: pointer; padding: 2px; border-radius: 3px; color: inherit; }
+  .tree-node .lock-btn:hover { opacity: 1; background: rgba(255,255,255,0.08); }
+  .tree-node.locked .lock-btn { opacity: 1; color: #eab308; }
+  /* Toolbar toggle: active = tinted primary */
+  button.tb-on { color: #0d99ff !important; background: rgba(13,153,255,0.1); }
 </style>
 </head>
 <body class="flex flex-col bg-surface">
@@ -261,6 +277,21 @@
     <!-- Preview color: changes how `currentColor` renders on the canvas.
          This is a preview-only setting; the SVG source is unaffected. -->
     <div class="absolute top-3 right-3 flex items-center gap-2 z-10">
+      <!-- Grid & snap controls. Both are UI-only (never serialised). -->
+      <div class="flex items-center gap-1 glass-panel border border-white/5 rounded-lg px-2 py-1">
+        <button id="toggle-grid" class="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-white/10" title="Grid overlay (G)">
+          <span class="material-symbols-outlined" style="font-size:16px;">grid_on</span>
+        </button>
+        <button id="toggle-snap" class="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-white/10" title="Snap to grid (Shift+G) — hold Alt to bypass while dragging">
+          <span class="material-symbols-outlined" style="font-size:16px;">grid_3x3</span>
+        </button>
+        <div class="flex items-center bg-white/5 border border-white/10 rounded px-1.5 h-6 gap-1" title="Grid / snap size (viewBox units)">
+          <input type="number" id="grid-size" min="0.25" step="0.25" value="1" class="w-8 bg-transparent border-none outline-none text-[11px] text-white font-mono p-0 text-center" />
+        </div>
+        <button id="show-help" class="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-white/10" title="Keyboard shortcuts (?)">
+          <span class="material-symbols-outlined" style="font-size:16px;">keyboard</span>
+        </button>
+      </div>
       <div class="flex items-center gap-1 glass-panel border border-white/5 rounded-lg px-2 py-1">
         <span class="text-[10px] text-on-surface-variant/70 font-medium">Preview</span>
         <button class="preview-swatch" data-preview="#e1e1e1" title="Default"></button>
@@ -324,6 +355,12 @@
         <button data-tool="line" class="tool-btn" title="Line (L)">
           <span class="material-symbols-outlined" style="font-size: 20px;">horizontal_rule</span>
         </button>
+        <button data-tool="pen" class="tool-btn" title="Pen — click to add points, Enter to finish, Z to close (P)">
+          <span class="material-symbols-outlined" style="font-size: 20px;">stylus_note</span>
+        </button>
+        <button data-tool="pencil" class="tool-btn" title="Pencil — press and drag to draw freehand (N)">
+          <span class="material-symbols-outlined" style="font-size: 20px;">edit</span>
+        </button>
         <div class="w-px h-6 bg-white/10 mx-1"></div>
         <button id="undo" class="tool-btn" title="Undo (Ctrl+Z)" disabled>
           <span class="material-symbols-outlined" style="font-size: 20px;">undo</span>
@@ -372,6 +409,78 @@
     </div>
   </aside>
 </div>
+
+<!-- Keyboard shortcut cheat sheet -->
+<dialog id="help-dialog" class="bg-surface-container border border-outline-variant rounded-xl p-0 max-w-2xl w-11/12 text-on-surface backdrop:bg-black/60 backdrop:backdrop-blur-sm">
+  <div class="p-4 border-b ui-border flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary">keyboard</span>
+      <h3 class="text-sm font-semibold text-on-surface">Keyboard Shortcuts</h3>
+    </div>
+    <button onclick="document.getElementById('help-dialog').close()" class="text-on-surface-variant hover:text-on-surface p-1 rounded">
+      <span class="material-symbols-outlined text-sm">close</span>
+    </button>
+  </div>
+  <div class="p-5 grid grid-cols-2 gap-x-8 gap-y-5 text-[12px]">
+    <div>
+      <div class="p-title mb-2">Tools</div>
+      <div class="space-y-1.5 font-mono text-on-surface-variant">
+        <div class="flex justify-between"><span>Select</span><kbd class="text-on-surface">V</kbd></div>
+        <div class="flex justify-between"><span>Rectangle</span><kbd class="text-on-surface">R</kbd></div>
+        <div class="flex justify-between"><span>Ellipse</span><kbd class="text-on-surface">O</kbd></div>
+        <div class="flex justify-between"><span>Line</span><kbd class="text-on-surface">L</kbd></div>
+        <div class="flex justify-between"><span>Pen (click-add-points)</span><kbd class="text-on-surface">P</kbd></div>
+        <div class="flex justify-between"><span>Pencil (freehand drag)</span><kbd class="text-on-surface">N</kbd></div>
+        <div class="flex justify-between"><span>Constrain draw (square / circle / 45°)</span><kbd class="text-on-surface">Shift-drag</kbd></div>
+        <div class="flex justify-between"><span>Pen — finish / close / cancel</span><kbd class="text-on-surface">Enter / Z / Esc</kbd></div>
+        <div class="flex justify-between"><span>Pen — remove last point</span><kbd class="text-on-surface">Backspace</kbd></div>
+      </div>
+    </div>
+    <div>
+      <div class="p-title mb-2">Grid & snap</div>
+      <div class="space-y-1.5 font-mono text-on-surface-variant">
+        <div class="flex justify-between"><span>Toggle grid</span><kbd class="text-on-surface">G</kbd></div>
+        <div class="flex justify-between"><span>Toggle snap</span><kbd class="text-on-surface">Shift+G</kbd></div>
+        <div class="flex justify-between"><span>Bypass snap while dragging</span><kbd class="text-on-surface">Alt</kbd></div>
+      </div>
+    </div>
+    <div>
+      <div class="p-title mb-2">Selection</div>
+      <div class="space-y-1.5 font-mono text-on-surface-variant">
+        <div class="flex justify-between"><span>Move selection</span><kbd class="text-on-surface">Arrow</kbd></div>
+        <div class="flex justify-between"><span>Move 10×</span><kbd class="text-on-surface">Shift+Arrow</kbd></div>
+        <div class="flex justify-between"><span>Duplicate</span><kbd class="text-on-surface">Ctrl+D</kbd></div>
+        <div class="flex justify-between"><span>Copy / paste</span><kbd class="text-on-surface">Ctrl+C / V</kbd></div>
+        <div class="flex justify-between"><span>Delete</span><kbd class="text-on-surface">Del</kbd></div>
+        <div class="flex justify-between"><span>Undo / redo</span><kbd class="text-on-surface">Ctrl+Z / Y</kbd></div>
+        <div class="flex justify-between"><span>Bring forward / back</span><kbd class="text-on-surface">Ctrl+] / [</kbd></div>
+        <div class="flex justify-between"><span>Group / ungroup</span><kbd class="text-on-surface">Ctrl+G / Ctrl+Shift+G</kbd></div>
+        <div class="flex justify-between"><span>Lock / unlock</span><kbd class="text-on-surface">Ctrl+Shift+L</kbd></div>
+      </div>
+    </div>
+    <div>
+      <div class="p-title mb-2">Path edit</div>
+      <div class="space-y-1.5 font-mono text-on-surface-variant">
+        <div class="flex justify-between"><span>Enter / exit edit mode</span><kbd class="text-on-surface">Enter / Esc</kbd></div>
+        <div class="flex justify-between"><span>Double-click path</span><kbd class="text-on-surface">Edit</kbd></div>
+        <div class="flex justify-between"><span>Double-click segment</span><kbd class="text-on-surface">Insert point</kbd></div>
+        <div class="flex justify-between"><span>Multi-select shapes or points</span><kbd class="text-on-surface">Shift-click</kbd></div>
+        <div class="flex justify-between"><span>Merge selected shapes</span><kbd class="text-on-surface">(Merge in props)</kbd></div>
+        <div class="flex justify-between"><span>Marquee (rubber-band)</span><kbd class="text-on-surface">Drag empty</kbd></div>
+        <div class="flex justify-between"><span>Select all points</span><kbd class="text-on-surface">Ctrl+A</kbd></div>
+        <div class="flex justify-between"><span>Delete points</span><kbd class="text-on-surface">Del</kbd></div>
+      </div>
+    </div>
+    <div>
+      <div class="p-title mb-2">Canvas</div>
+      <div class="space-y-1.5 font-mono text-on-surface-variant">
+        <div class="flex justify-between"><span>Zoom in / out</span><kbd class="text-on-surface">Ctrl+Wheel</kbd></div>
+        <div class="flex justify-between"><span>Pan</span><kbd class="text-on-surface">Space+drag</kbd></div>
+        <div class="flex justify-between"><span>Show this dialog</span><kbd class="text-on-surface">?</kbd></div>
+      </div>
+    </div>
+  </div>
+</dialog>
 
 <!-- Save-as-JSON dialog -->
 <dialog id="save-dialog" class="bg-surface-container border border-outline-variant rounded-xl p-0 max-w-md w-11/12 text-on-surface backdrop:bg-black/60 backdrop:backdrop-blur-sm">

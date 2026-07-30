@@ -2,7 +2,18 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 
-const PORT = Number(process.env.PORT) || 5173;
+const args = process.argv.slice(2);
+const getArg = (flag: string) => {
+    const prefix = `${flag}=`;
+    const found = args.find(a => a.startsWith(prefix));
+    if (found) return found.slice(prefix.length);
+    const idx = args.indexOf(flag);
+    if (idx !== -1 && idx + 1 < args.length) return args[idx + 1];
+    return undefined;
+};
+
+const HOST = getArg('--host') || process.env.HOST || '0.0.0.0';
+const PORT = Number(getArg('--port') || process.env.PORT) || 5173;
 const REPO_ROOT = path.resolve(__dirname, '../..');
 const DEMO_ROOT = path.join(__dirname, 'demo');
 
@@ -107,8 +118,8 @@ function send(res: http.ServerResponse, status: number, type: string, body: stri
     res.end(body);
 }
 
-server.listen(PORT, () => {
-    console.log(`KFE icons demo → http://localhost:${PORT}/`);
+server.listen(PORT, HOST, () => {
+    console.log(`KFE icons demo → http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}/`);
     console.log(`  demo root: ${DEMO_ROOT}`);
     console.log(`  repo root: ${REPO_ROOT}`);
 });
