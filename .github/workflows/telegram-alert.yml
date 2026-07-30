@@ -1,0 +1,29 @@
+name: Telegram Alert
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+  pull_request:
+    branches:
+      - main
+      - master
+      - develop
+    types: [opened, synchronize, reopened, closed]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Send Telegram alert
+        uses: pphatdev/telegrambot-alert-action@v1
+        with:
+          telegram-bot-token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          telegram-chat-id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          status: success
+          stage: Update
