@@ -440,6 +440,11 @@
     "type": "brands"
   },
   {
+    "name": "kfemeetup",
+    "target": "brands/kfemeetup.json",
+    "type": "brands"
+  },
+  {
     "name": "kotlin",
     "target": "brands/kotlin.json",
     "type": "brands"
