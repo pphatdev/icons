@@ -1,6 +1,5 @@
 ## Usage
 
-
 Users can easily download and install icons from this project via the `@pphatdev/registry` package CLI.
 
 ### Installation 
