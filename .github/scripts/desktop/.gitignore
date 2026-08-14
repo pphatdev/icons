@@ -3,3 +3,11 @@ out/
 dist/
 .vite/
 *.log
+
+# Next.js build caches — regenerated on every `npm run build`.
+# Currently already tracked (see `git ls-files renderer/.next`); untrack with
+# `git rm --cached -r .github/scripts/desktop/renderer/.next` in a separate
+# hygiene commit before this rule takes effect for existing files.
+renderer/.next/
+renderer/out/
+renderer/tsconfig.tsbuildinfo
