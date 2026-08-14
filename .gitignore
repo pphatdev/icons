@@ -3,3 +3,53 @@ node_modules/
 
 .claude/
 DRAFT_PR.md
+
+# Secrets — belt-and-braces so a stray local file can't be committed.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+*.p12
+*.pfx
+
+# OS artifacts
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Editor / IDE — local-only files (whole IDE dirs stay tracked so shared
+# settings can be checked in).
+*.swp
+*.swo
+.*.sw?
+*~
+*.bak
+*.tmp
+*.orig
+*.rej
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build / test artifacts
+*.tsbuildinfo
+coverage/
+.nyc_output/
+.cache/
+.parcel-cache/
+.turbo/

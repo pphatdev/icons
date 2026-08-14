@@ -14,8 +14,19 @@ const getArg = (flag: string) => {
     return undefined;
 };
 
-const HOST = getArg('--host') || process.env.HOST || '0.0.0.0';
+// Default to loopback so the write API (/api/save) isn't exposed to the LAN.
+// Pass --host 0.0.0.0 (or HOST=0.0.0.0) to opt in explicitly.
+const HOST = getArg('--host') || process.env.HOST || '127.0.0.1';
 const PORT = Number(getArg('--port') || process.env.PORT) || 5173;
+
+// Origins the /api/save handler will accept. Cross-origin browser POSTs
+// with Content-Type: application/json trigger a CORS preflight — we don't
+// answer OPTIONS, so those fail closed. This Origin check is defense in
+// depth for the same-origin case and covers non-browser callers.
+const ALLOWED_ORIGINS = new Set([
+    `http://127.0.0.1:${PORT}`,
+    `http://localhost:${PORT}`,
+]);
 const REPO_ROOT = path.resolve(__dirname, '../..');
 const DEMO_ROOT = path.join(__dirname, 'demo');
 const TW_CSS_SRC = path.join(DEMO_ROOT, 'assets', 'css', 'tailwind.css');
@@ -120,6 +131,26 @@ const server = http.createServer((req, res) => {
 
     // POST /api/save — writes <repo-root>/<category>/<name>.json
     if (req.method === 'POST' && url === '/api/save') {
+        // CSRF guard: reject anything that isn't a same-origin JSON POST.
+        // Content-Type must be application/json so browsers can't fire a
+        // "simple" cross-origin request without preflight. Origin (when
+        // set — browsers always set it on POST) must match one of the
+        // demo pages. Referer is the fallback for older callers.
+        const contentType = (req.headers['content-type'] || '').split(';')[0]!.trim().toLowerCase();
+        if (contentType !== 'application/json') {
+            return send(res, 415, 'application/json', JSON.stringify({ error: 'Content-Type must be application/json' }));
+        }
+        const origin = req.headers.origin;
+        if (typeof origin === 'string' && !ALLOWED_ORIGINS.has(origin)) {
+            return send(res, 403, 'application/json', JSON.stringify({ error: 'Cross-origin write blocked' }));
+        }
+        if (typeof origin !== 'string') {
+            const referer = req.headers.referer;
+            const refererOk = typeof referer === 'string' && [...ALLOWED_ORIGINS].some(o => referer.startsWith(o + '/'));
+            if (!refererOk) {
+                return send(res, 403, 'application/json', JSON.stringify({ error: 'Missing Origin/Referer' }));
+            }
+        }
         let body = '';
         req.on('data', chunk => (body += chunk));
         req.on('end', () => {

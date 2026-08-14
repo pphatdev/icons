@@ -21,7 +21,9 @@ jobs:
       pull-requests: write
     steps:
       - name: Send Telegram alert
-        uses: pphatdev/telegrambot-alert-action@v1
+        # Pinned to the SHA the @v1 moving tag resolves to today. v1.1 also
+        # exists — bump the pin (and this comment) when adopting it.
+        uses: pphatdev/telegrambot-alert-action@9a305c842e55b379dcf12ba27f99d3bd602c333d # v1
         with:
           telegram-bot-token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           telegram-chat-id: ${{ secrets.TELEGRAM_CHAT_ID }}

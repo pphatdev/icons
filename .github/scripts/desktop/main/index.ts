@@ -29,7 +29,10 @@ function createWindow(): void {
         icon: ICON_PATH,
         webPreferences: {
             preload: path.join(__dirname, '../preload/index.js'),
-            sandbox: false,
+            // Chromium sandbox on. The preload only uses electron's
+            // contextBridge + ipcRenderer, both of which are sandbox-safe.
+            // Without this, an XSS in the renderer reaches raw Node APIs.
+            sandbox: true,
             contextIsolation: true,
             nodeIntegration: false,
         },

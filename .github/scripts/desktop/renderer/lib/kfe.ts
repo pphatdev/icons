@@ -3,6 +3,7 @@ import type {
   KfeRegistryIcon,
   KfeRegistrySnapshot,
 } from '@/types/global';
+import { sanitizeSvg } from './sanitize-svg';
 
 export const LOCAL_ICONS_KEY = 'kfe-custom-icons';
 
@@ -62,6 +63,11 @@ export async function loadAll(): Promise<KfeRegistrySnapshot> {
       icons.push(icon);
     }
   }
+
+  // Sanitize once at the trust boundary. Every consumer inlines icon.svg via
+  // dangerouslySetInnerHTML/innerHTML — an unsanitized <svg onload="…"> from
+  // a poisoned PR would run in the Electron renderer and reach window.kfe.
+  for (const icon of icons) icon.svg = sanitizeSvg(icon.svg);
 
   return { categories, icons };
 }

@@ -1,3 +1,5 @@
+import { sanitizeSvg } from './sanitize.js';
+
 export const CUSTOM_STORAGE_KEY = 'kfe-custom-icons';
 
 export function loadCustomIcons() {
@@ -29,6 +31,12 @@ export async function loadAll() {
     categories.push({ name: 'custom', items: custom.map(c => ({ name: c.name, type: 'custom' })) });
     for (const c of custom) icons.push({ name: c.name, category: 'custom', svg: c.svg });
   }
+
+  // Sanitize once at the trust boundary. Downstream code assigns icon.svg
+  // straight to innerHTML / feeds it to DOMParser+appendChild, so an
+  // unsanitized <svg onload="…"> from a poisoned PR would fire and call
+  // window.kfe.saveIcon(). See ./sanitize.js.
+  for (const icon of icons) icon.svg = sanitizeSvg(icon.svg);
 
   return { categories, icons };
 }
