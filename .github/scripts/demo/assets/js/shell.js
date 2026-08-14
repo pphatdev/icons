@@ -1,4 +1,4 @@
-const TAB_TITLES = { browse: 'Browse', studio: 'Studio', graph: 'Graph' };
+const TAB_TITLES = { browse: 'Browse', studio: 'Studio' };
 
 export function initShell(activeTab) {
   document.querySelectorAll('nav a').forEach(a => {

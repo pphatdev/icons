@@ -1,6 +1,8 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
+import { compile } from '@tailwindcss/node';
+import { Scanner } from '@tailwindcss/oxide';
 
 const args = process.argv.slice(2);
 const getArg = (flag: string) => {
@@ -16,6 +18,8 @@ const HOST = getArg('--host') || process.env.HOST || '0.0.0.0';
 const PORT = Number(getArg('--port') || process.env.PORT) || 5173;
 const REPO_ROOT = path.resolve(__dirname, '../..');
 const DEMO_ROOT = path.join(__dirname, 'demo');
+const TW_CSS_SRC = path.join(DEMO_ROOT, 'assets', 'css', 'tailwind.css');
+const TW_CSS_BASE = path.dirname(TW_CSS_SRC);
 
 const MIME: Record<string, string> = {
     '.html': 'text/html; charset=utf-8',
@@ -35,14 +39,84 @@ const PAGE_ROUTES: Record<string, string> = {
     '/browse/': 'browse.html',
     '/studio': 'studio.html',
     '/studio/': 'studio.html',
-    '/graph': 'graph.html',
-    '/graph/': 'graph.html',
 };
 
 const SLUG = /^[a-z0-9][a-z0-9-]*$/;
 
+// Tailwind on-the-fly compiler. Rebuilds when the source CSS or any scanned
+// content file changes since the last request; otherwise returns the cached
+// output. Compile object is rebuilt only when the source CSS itself changes,
+// since `@source` resolution happens at compile-time.
+type TwState = {
+    css: string;
+    // File → mtimeMs snapshot at the moment `css` was produced.
+    fingerprint: Map<string, number>;
+};
+let twCache: TwState | null = null;
+let twCompilerSrcMtime = 0;
+let twCompiler: Awaited<ReturnType<typeof compile>> | null = null;
+
+async function buildTailwindCss(): Promise<string> {
+    const cssSource = fs.readFileSync(TW_CSS_SRC, 'utf8');
+    const srcStat = fs.statSync(TW_CSS_SRC);
+
+    // Rebuild the compiler only when the source CSS changes — otherwise reuse
+    // it and just rescan candidates. Compilation is the expensive step.
+    if (!twCompiler || twCompilerSrcMtime !== srcStat.mtimeMs) {
+        twCompiler = await compile(cssSource, {
+            base: TW_CSS_BASE,
+            from: TW_CSS_SRC,
+            onDependency: () => {},
+        });
+        twCompilerSrcMtime = srcStat.mtimeMs;
+        twCache = null;
+    }
+
+    const scanner = new Scanner({ sources: twCompiler.sources });
+    const candidates = scanner.scan();
+
+    // Fingerprint: source CSS + every file the scanner touched. If any mtime
+    // matches the previous run we can short-circuit the build.
+    const fingerprint = new Map<string, number>();
+    fingerprint.set(TW_CSS_SRC, srcStat.mtimeMs);
+    for (const f of scanner.files) {
+        try {
+            fingerprint.set(f, fs.statSync(f).mtimeMs);
+        } catch {
+            // File vanished between scan and stat; ignore.
+        }
+    }
+
+    if (twCache && sameFingerprint(twCache.fingerprint, fingerprint)) {
+        return twCache.css;
+    }
+
+    const css = twCompiler.build(candidates);
+    twCache = { css, fingerprint };
+    return css;
+}
+
+function sameFingerprint(a: Map<string, number>, b: Map<string, number>): boolean {
+    if (a.size !== b.size) return false;
+    for (const [k, v] of a) {
+        if (b.get(k) !== v) return false;
+    }
+    return true;
+}
+
 const server = http.createServer((req, res) => {
     const url = decodeURIComponent((req.url ?? '/').split('?')[0]);
+
+    // GET /assets/css/tailwind.css — compile-on-demand, no build step needed.
+    if (req.method === 'GET' && url === '/assets/css/tailwind.css') {
+        buildTailwindCss()
+            .then(css => send(res, 200, MIME['.css'], css))
+            .catch(err => {
+                console.error('[tailwind] compile failed:', err);
+                send(res, 500, 'text/plain', `Tailwind compile error: ${String((err as Error)?.message ?? err)}`);
+            });
+        return;
+    }
 
     // POST /api/save — writes <repo-root>/<category>/<name>.json
     if (req.method === 'POST' && url === '/api/save') {
@@ -122,4 +196,5 @@ server.listen(PORT, HOST, () => {
     console.log(`KFE icons demo → http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}/`);
     console.log(`  demo root: ${DEMO_ROOT}`);
     console.log(`  repo root: ${REPO_ROOT}`);
+    console.log(`  tailwind : ${TW_CSS_SRC} (compiled on-demand at /assets/css/tailwind.css)`);
 });

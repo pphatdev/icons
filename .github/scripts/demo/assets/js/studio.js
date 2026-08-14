@@ -380,7 +380,9 @@ function injectGridPattern(svg, srcW, srcH) {
 }
 function updateCanvasCursor() {
   const svg = currentCanvasSvg();
-  if (svg) svg.style.cursor = state.tool === 'select' ? 'default' : 'crosshair';
+  if (!svg) return;
+  svg.style.cursor = state.tool === 'select' ? 'default' : 'crosshair';
+  svg.dataset.tool = state.tool;
 }
 
 // ---- Preview color (affects `currentColor` on canvas only, not the source) ----
