@@ -1,3 +1,4 @@
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/1523bb25-d7ae-4a2c-94b4-4865a92eccb3" />
 ## Usage
 
 Users can easily download and install icons from this project via the `@pphatdev/registry` package CLI.
