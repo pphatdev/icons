@@ -1,0 +1,18 @@
+# CODEOWNERS — auto-request review on security-sensitive paths.
+# See https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Enable "Require review from Code Owners" in branch protection for these
+# paths to actually block merge — the file alone only requests review.
+
+# CI, build scripts, and the Electron desktop app all execute code with
+# elevated privileges (GITHUB_TOKEN write access, contents on the maintainer's
+# disk via saveIcon IPC). A malicious PR touching these paths could persist.
+/.github/         @pphatdev
+
+# Registry manifests drive what the CLI installs into consumer projects —
+# a bad merge here fans out to every downstream user.
+/index.json       @pphatdev
+/brands.json      @pphatdev
+/regular.json     @pphatdev
+/schema.json      @pphatdev
+/config.json      @pphatdev
