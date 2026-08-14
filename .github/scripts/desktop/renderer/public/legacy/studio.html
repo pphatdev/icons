@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Studio · KFe Icons</title>
+<link rel="stylesheet" href="./assets/css/tailwind.compiled.css" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-25..0" />
+</head>
+<body class="flex flex-col bg-background text-foreground h-screen">
+
+<!-- ==========================================================
+     TOP TOOLBAR — brand + file name / primary actions
+     Tool palette lives inside the canvas as a floating pill (Figma-style).
+     ========================================================== -->
+<header class="h-12 border-b flex items-center justify-between px-3 bg-card z-20 flex-shrink-0">
+  <div class="flex items-center gap-3 min-w-0">
+    <div class="flex items-center gap-2 flex-shrink-0">
+      <svg width="24" height="24" viewBox="0 0 48 48" fill="none" class="text-primary" aria-label="KFe Meetup">
+        <title>KFe Meetup</title>
+        <path opacity="0.15" d="M31.8523 0H16.1477C7.22957 0 0 7.22957 0 16.1477V31.8523C0 40.7704 7.22957 48 16.1477 48H31.8523C40.7704 48 48 40.7704 48 31.8523V16.1477C48 7.22957 40.7704 0 31.8523 0Z" fill="currentColor"/>
+        <path d="M9.12391 16.5206C7.88123 13.5993 16.3661 9.9539 17.5809 12.4063C17.5377 12.3893 14.9573 11.4371 15.3222 26.3731C15.529 34.8696 12.0907 36.7842 12.0907 36.7842C12.092 36.6905 12.314 20.5426 12.1239 17.9249C12.0109 16.3695 9.15606 16.5188 9.12391 16.5206ZM29.1171 11.0079C29.5283 10.9447 29.8954 11.2701 29.8827 11.6856L29.787 14.7764C29.7612 15.6 29.1991 16.3102 28.4022 16.5255L22.6132 17.6827C22.2728 17.7748 21.9774 17.9845 21.7782 18.2745L19.5536 21.501C19.0513 22.2348 18.1504 23.7301 18.2841 24.6085C18.4908 25.9559 19.1833 26.5075 20.9266 28.2452C22.4317 29.7454 26.1332 31.9544 26.9345 32.3829C27.4678 32.6676 28.0374 32.6724 28.4647 32.2452L28.0302 31.712C28.0207 31.6951 27.3334 30.4684 27.1708 29.5987C26.7505 27.3501 27.4142 25.3449 29.204 24.1046C30.4807 23.22 32.0211 22.8196 33.8847 23.6602C34.8219 24.0833 35.4513 25.755 34.7743 27.7335C34.1595 29.5316 33.8847 29.8672 33.8847 29.8672L32.1034 32.2452C32.1034 32.2452 33.7892 33.804 34.9921 31.8077C36.1905 29.8214 38.2909 24.2936 38.3104 24.2422L39.8544 20.2012C39.8503 20.2251 38.5957 27.5544 38.3593 28.9356C38.1225 30.3183 36.4718 34.3778 34.202 35.3087C31.9328 36.2381 29.9724 34.0781 29.9716 34.0772C29.9542 34.0939 27.0295 36.9048 24.4931 36.0186C20.9831 34.7922 17.0819 28.8265 16.2343 27.1036C15.386 25.3802 16.9442 22.1539 17.9843 20.5128C18.824 19.1856 20.8813 14.514 21.6376 12.7755C21.8165 12.3641 22.1933 12.0745 22.6356 12.0059L29.1171 11.0079ZM33.0399 27.5831C33.1995 25.7377 32.3967 25.6269 31.6854 26.0372C31.0161 26.4229 30.2184 27.9429 30.5009 29.2003C30.713 30.1461 30.87 30.587 30.87 30.587C30.8988 30.5738 32.8591 29.6714 33.0399 27.5831ZM30.9296 16.7852C30.9187 16.8338 29.9295 21.214 27.5018 22.6563C24.9856 24.1516 19.2294 24.6817 19.2294 24.6817L19.0595 23.9297C19.0595 23.2118 19.3688 22.4659 19.3749 22.4512L20.7557 20.2491C20.7735 20.2572 22.658 21.1158 25.7518 20.2491C29.5182 19.1946 30.9111 16.817 30.9296 16.7852ZM30.871 13.2462C30.1087 11.6537 34.823 10.2232 35.5565 11.5557C35.5565 11.5557 33.0733 11.8506 33.9891 14.3799C35.2048 17.7378 32.8329 20.7247 32.8329 20.7247C32.8324 20.6892 32.7911 17.6143 32.1796 15.7969C31.7713 14.5836 30.8849 13.2669 30.871 13.2462Z" fill="currentColor"/>
+      </svg>
+      <span class="font-medium text-sm text-foreground">KFe Icons</span>
+    </div>
+    <span class="text-muted-foreground/50">/</span>
+    <span id="current-name" class="text-muted-foreground text-[11px] font-mono opacity-70 truncate">untitled</span>
+  </div>
+
+  <div class="flex items-center gap-2">
+    <button id="copy" class="btn btn-ghost btn-icon" title="Copy SVG">
+      <span class="material-symbols-outlined" style="font-size: 18px;">content_copy</span>
+    </button>
+    <button id="download" class="btn btn-primary btn-sm">Export</button>
+  </div>
+</header>
+
+<!-- ==========================================================
+     BODY — rail + layers dock + canvas + inspector
+     ========================================================== -->
+<div class="flex flex-1 overflow-hidden min-h-0">
+  <!-- Icon rail (page nav + studio actions) -->
+  <aside class="w-12 border-r flex flex-col items-center py-3 gap-1 bg-background z-10 flex-shrink-0">
+    <a href="/" class="rail-btn" aria-label="Browse all icons">
+      <span class="material-symbols-outlined" aria-hidden="true">grid_view</span>
+      <span class="lbl">Browse</span>
+    </a>
+    <a href="./studio.html" class="rail-btn active" aria-label="Studio (current)">
+      <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1" aria-hidden="true">edit</span>
+      <span class="lbl">Studio</span>
+    </a>
+    <div class="w-6 border-t my-2"></div>
+    <button id="new-icon" class="rail-btn" title="Create new icon" aria-label="Create new icon">
+      <span class="material-symbols-outlined" aria-hidden="true">add</span>
+      <span class="lbl">New</span>
+    </button>
+    <button id="reset" class="rail-btn" title="Reset icon" aria-label="Reset icon">
+      <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
+      <span class="lbl">Reset</span>
+    </button>
+    <div class="flex-1"></div>
+  </aside>
+
+  <!-- Layers dock -->
+  <aside class="w-56 border-r flex flex-col bg-card z-10 flex-shrink-0">
+    <div class="p-3 border-b flex-shrink-0">
+      <div class="input-field rounded-md px-2.5 py-1.5 flex items-center gap-2">
+        <span class="material-symbols-outlined text-sm text-muted-foreground">search</span>
+        <input id="icon-search" type="text" placeholder="Search icons…" class="text-[11px] bg-transparent border-none" />
+      </div>
+    </div>
+    <div class="flex-1 overflow-y-auto scrollbar-hide px-2 py-2">
+      <div class="flex items-center justify-between px-2 mb-2">
+        <span class="p-title">Icons</span>
+        <button id="new-icon-sm" class="w-5 h-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent" title="New icon">
+          <span class="material-symbols-outlined text-sm">add</span>
+        </button>
+      </div>
+      <div id="icon-list" class="space-y-0.5"></div>
+    </div>
+  </aside>
+
+  <!-- Canvas -->
+  <main class="flex-1 relative bg-background overflow-hidden canvas-grid min-w-0">
+    <div class="absolute top-3 left-3 text-[11px] text-muted-foreground/60 font-medium tracking-wide uppercase z-10" id="canvas-label"></div>
+
+    <!-- Canvas overlays — grid/snap/help/center cluster + preview cluster -->
+    <div class="absolute top-3 right-3 flex items-center gap-2 z-10">
+      <div class="overlay-pill">
+        <button id="toggle-grid" class="tool-btn" title="Grid overlay (G)">
+          <span class="material-symbols-outlined" style="font-size:16px;">grid_on</span>
+        </button>
+        <button id="toggle-snap" class="tool-btn" title="Snap to grid (Shift+G) — hold Alt to bypass while dragging">
+          <span class="material-symbols-outlined" style="font-size:16px;">grid_3x3</span>
+        </button>
+        <input type="number" id="grid-size" min="0.25" step="0.25" value="1" title="Grid / snap size (viewBox units)" class="overlay-pill__input" />
+        <span class="overlay-pill__divider"></span>
+        <button id="center" class="tool-btn" title="Clear transform on selection">
+          <span class="material-symbols-outlined" style="font-size:16px;">crop_free</span>
+        </button>
+        <span class="overlay-pill__divider"></span>
+        <button id="show-help" class="tool-btn" title="Keyboard shortcuts (?)">
+          <span class="material-symbols-outlined" style="font-size:16px;">keyboard</span>
+        </button>
+      </div>
+      <div class="overlay-pill">
+        <span class="overlay-pill__label">Preview</span>
+        <button class="preview-swatch" data-preview="#e1e1e1" title="Default"></button>
+        <button class="preview-swatch" data-preview="#ffffff" title="White"></button>
+        <button class="preview-swatch" data-preview="#000000" title="Black"></button>
+        <button class="preview-swatch" data-preview="#0d99ff" title="Blue"></button>
+        <button class="preview-swatch" data-preview="#22c55e" title="Green"></button>
+        <button class="preview-swatch" data-preview="#ef4444" title="Red"></button>
+        <span class="overlay-pill__divider"></span>
+        <input id="preview-color" type="color" value="#e1e1e1" title="Custom preview color" class="w-6 h-6 rounded-full cursor-pointer bg-transparent border p-0" />
+      </div>
+    </div>
+
+    <!-- Floating tool palette, Figma-style. Sits inside the canvas area so
+         it stays with the artboard even when the top bar is compact. -->
+    <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-20">
+      <div id="tools-palette" class="overlay-pill">
+        <button data-tool="select" class="tool-btn active" title="Select (V)">
+          <span class="material-symbols-outlined" style="font-size: 18px;">near_me</span>
+        </button>
+        <span class="overlay-pill__divider"></span>
+        <button data-tool="rect" class="tool-btn" title="Rectangle (R)">
+          <span class="material-symbols-outlined" style="font-size: 18px;">check_box_outline_blank</span>
+        </button>
+        <button data-tool="ellipse" class="tool-btn" title="Ellipse (O)">
+          <span class="material-symbols-outlined" style="font-size: 18px;">circle</span>
+        </button>
+        <button data-tool="line" class="tool-btn" title="Line (L)">
+          <span class="material-symbols-outlined" style="font-size: 18px;">horizontal_rule</span>
+        </button>
+        <button data-tool="pen" class="tool-btn" title="Pen — click to add points, Enter to finish, Z to close (P)">
+          <span class="material-symbols-outlined" style="font-size: 18px;">stylus_note</span>
+        </button>
+        <button data-tool="pencil" class="tool-btn" title="Pencil — press and drag to draw freehand (N)">
+          <span class="material-symbols-outlined" style="font-size: 18px;">edit</span>
+        </button>
+        <span class="overlay-pill__divider"></span>
+        <button id="undo" class="tool-btn" title="Undo (Ctrl+Z)" disabled>
+          <span class="material-symbols-outlined" style="font-size: 18px;">undo</span>
+        </button>
+        <button id="redo" class="tool-btn" title="Redo (Ctrl+Y)" disabled>
+          <span class="material-symbols-outlined" style="font-size: 18px;">redo</span>
+        </button>
+        <span class="overlay-pill__divider"></span>
+        <button id="tool-duplicate" class="tool-btn" title="Duplicate (Ctrl+D)">
+          <span class="material-symbols-outlined" style="font-size: 18px;">content_copy</span>
+        </button>
+        <button id="tool-delete" class="tool-btn" title="Delete (Del)">
+          <span class="material-symbols-outlined" style="font-size: 18px;">delete</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="absolute inset-0 flex items-center justify-center">
+      <div class="relative" id="canvas-wrap">
+        <div id="canvas-host"></div>
+        <div id="handles" class="absolute inset-0 pointer-events-none"></div>
+        <!-- Floating quick-edit popover, positioned by JS near the selection -->
+        <div id="quick-actions" class="absolute overlay-pill z-10 hidden">
+          <label class="qa-btn" title="Fill color">
+            <span class="material-symbols-outlined" style="font-size:16px;">format_color_fill</span>
+            <input type="color" id="qa-fill" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+          </label>
+          <label class="qa-btn" title="Stroke color">
+            <span class="material-symbols-outlined" style="font-size:16px;">border_color</span>
+            <input type="color" id="qa-stroke" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+          </label>
+          <input type="number" id="qa-stroke-w" min="0" step="0.5" placeholder="0" title="Stroke width" class="overlay-pill__input" style="width: 40px;" />
+          <span class="overlay-pill__divider"></span>
+          <button class="qa-btn hidden" id="qa-edit-path" title="Edit path points (Enter)">
+            <span class="material-symbols-outlined" style="font-size:16px;">edit_note</span>
+          </button>
+          <button class="qa-btn" id="qa-duplicate" title="Duplicate (Ctrl+D)">
+            <span class="material-symbols-outlined" style="font-size:16px;">content_copy</span>
+          </button>
+          <button class="qa-btn text-destructive hover:text-destructive" id="qa-delete" title="Delete">
+            <span class="material-symbols-outlined" style="font-size:16px;">delete</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Inspector -->
+  <aside class="w-72 border-l flex flex-col bg-card z-10 flex-shrink-0">
+    <div class="flex items-center border-b px-3 flex-shrink-0 h-11">
+      <span class="text-xs text-foreground font-semibold">Design</span>
+      <div class="flex-1"></div>
+      <div id="zoom-display" class="text-muted-foreground text-[11px] font-mono opacity-60">100%</div>
+    </div>
+    <div id="props" class="overflow-y-auto scrollbar-hide flex-1 p-4 space-y-5"></div>
+    <div class="border-t p-3 flex-shrink-0">
+      <div class="flex items-center justify-between mb-2 px-1">
+        <span class="p-title">Elements</span>
+        <span id="tree-count" class="text-[10px] text-muted-foreground/60 font-mono">0</span>
+      </div>
+      <div id="tree" class="max-h-48 overflow-auto scrollbar-hide space-y-0.5"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- ==========================================================
+     STATUS BAR — consolidated stats + zoom
+     ========================================================== -->
+<footer class="h-7 border-t flex items-center justify-between px-3 bg-card text-[11px] text-muted-foreground font-mono flex-shrink-0 z-10">
+  <div class="flex items-center gap-3">
+    <span id="stats" class="opacity-70">loading…</span>
+  </div>
+  <div class="flex items-center gap-1">
+    <button id="zoom-out" class="w-5 h-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent" title="Zoom out">
+      <span class="material-symbols-outlined" style="font-size:14px;">remove</span>
+    </button>
+    <span id="zoom-label" class="min-w-[42px] text-center opacity-80">100%</span>
+    <button id="zoom-in" class="w-5 h-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent" title="Zoom in">
+      <span class="material-symbols-outlined" style="font-size:14px;">add</span>
+    </button>
+  </div>
+</footer>
+
+<!-- Keyboard shortcut cheat sheet -->
+<dialog id="help-dialog" class="bg-card border rounded-xl p-0 max-w-3xl w-11/12 max-h-[85vh] text-foreground flex flex-col overflow-hidden">
+  <header class="p-4 border-b flex items-center justify-between flex-shrink-0">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary">keyboard</span>
+      <h3 class="text-sm font-semibold text-foreground">Keyboard Shortcuts</h3>
+    </div>
+    <button onclick="document.getElementById('help-dialog').close()" class="text-muted-foreground hover:text-foreground p-1 rounded" aria-label="Close">
+      <span class="material-symbols-outlined text-sm">close</span>
+    </button>
+  </header>
+
+  <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto scrollbar-hide">
+
+    <!-- Tools -->
+    <section class="shortcut-card">
+      <div class="shortcut-card__header">
+        <span class="material-symbols-outlined" style="font-size:14px;">tune</span>
+        <span class="p-title">Tools</span>
+      </div>
+      <div class="shortcut-list">
+        <div class="shortcut-row"><span>Select</span><span class="keys"><kbd>V</kbd></span></div>
+        <div class="shortcut-row"><span>Rectangle</span><span class="keys"><kbd>R</kbd></span></div>
+        <div class="shortcut-row"><span>Ellipse</span><span class="keys"><kbd>O</kbd></span></div>
+        <div class="shortcut-row"><span>Line</span><span class="keys"><kbd>L</kbd></span></div>
+        <div class="shortcut-row"><span>Pen (click to add points)</span><span class="keys"><kbd>P</kbd></span></div>
+        <div class="shortcut-row"><span>Pencil (freehand drag)</span><span class="keys"><kbd>N</kbd></span></div>
+        <div class="shortcut-row"><span>Constrain draw</span><span class="keys kbd-combo"><kbd>Shift</kbd><span class="kbd-plus">+</span><kbd>drag</kbd></span></div>
+        <div class="shortcut-row"><span>Pen — finish</span><span class="keys"><kbd>Enter</kbd></span></div>
+        <div class="shortcut-row"><span>Pen — close path</span><span class="keys"><kbd>Z</kbd></span></div>
+        <div class="shortcut-row"><span>Pen — cancel</span><span class="keys"><kbd>Esc</kbd></span></div>
+        <div class="shortcut-row"><span>Pen — remove last point</span><span class="keys"><kbd>⌫</kbd></span></div>
+      </div>
+    </section>
+
+    <!-- Selection -->
+    <section class="shortcut-card">
+      <div class="shortcut-card__header">
+        <span class="material-symbols-outlined" style="font-size:14px;">near_me</span>
+        <span class="p-title">Selection</span>
+      </div>
+      <div class="shortcut-list">
+        <div class="shortcut-row"><span>Move selection</span><span class="keys"><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd></span></div>
+        <div class="shortcut-row"><span>Move 10×</span><span class="keys kbd-combo"><kbd>Shift</kbd><span class="kbd-plus">+</span><kbd>Arrow</kbd></span></div>
+        <div class="shortcut-row"><span>Duplicate</span><span class="keys kbd-combo"><kbd>Ctrl</kbd><span class="kbd-plus">+</span><kbd>D</kbd></span></div>
+        <div class="shortcut-row"><span>Copy</span><span class="keys kbd-combo"><kbd>Ctrl</kbd><span class="kbd-plus">+</span><kbd>C</kbd></span></div>
+        <div class="shortcut-row"><span>Paste</span><span class="keys kbd-combo"><kbd>Ctrl</kbd><span class="kbd-plus">+</span><kbd>V</kbd></span></div>
+        <div class="shortcut-row"><span>Delete</span><span class="keys"><kbd>Del</kbd></span></div>
+        <div class="shortcut-row"><span>Undo</span><span class="keys kbd-combo"><kbd>Ctrl</kbd><span class="kbd-plus">+</span><kbd>Z</kbd></span></div>
+        <div class="shortcut-row"><span>Redo</span><span class="keys kbd-combo"><kbd>Ctrl</kbd><span class="kbd-plus">+</span><kbd>Y</kbd></span></div>
+        <div class="shortcut-row"><span>Bring forward</span><span class="keys kbd-combo"><kbd>Ctrl</kbd><span class="kbd-plus">+</span><kbd>]</kbd></span></div>
+        <div class="shortcut-row"><span>Send backward</span><span class="keys kbd-combo"><kbd>Ctrl</kbd><span class="kbd-plus">+</span><kbd>[</kbd></span></div>
+        <div class="shortcut-row"><span>Group / ungroup</span><span class="keys kbd-combo"><kbd>Ctrl</kbd><span class="kbd-plus">+</span><kbd>G</kbd></span></div>
+        <div class="shortcut-row"><span>Lock / unlock</span><span class="keys kbd-combo"><kbd>Ctrl</kbd><span class="kbd-plus">+</span><kbd>Shift</kbd><span class="kbd-plus">+</span><kbd>L</kbd></span></div>
+      </div>
+    </section>
+
+    <!-- Path edit -->
+    <section class="shortcut-card">
+      <div class="shortcut-card__header">
+        <span class="material-symbols-outlined" style="font-size:14px;">edit_note</span>
+        <span class="p-title">Path edit</span>
+      </div>
+      <div class="shortcut-list">
+        <div class="shortcut-row"><span>Enter / exit edit mode</span><span class="keys"><kbd>Enter</kbd><kbd>Esc</kbd></span></div>
+        <div class="shortcut-row"><span>Edit path</span><span class="keys"><kbd>Dbl-click</kbd></span></div>
+        <div class="shortcut-row"><span>Insert point</span><span class="keys"><kbd>Dbl-click segment</kbd></span></div>
+        <div class="shortcut-row"><span>Multi-select shapes or points</span><span class="keys kbd-combo"><kbd>Shift</kbd><span class="kbd-plus">+</span><kbd>click</kbd></span></div>
+        <div class="shortcut-row"><span>Marquee (rubber-band)</span><span class="keys kbd-combo"><kbd>Drag</kbd><span class="kbd-sep">·</span><kbd>empty</kbd></span></div>
+        <div class="shortcut-row"><span>Select all points</span><span class="keys kbd-combo"><kbd>Ctrl</kbd><span class="kbd-plus">+</span><kbd>A</kbd></span></div>
+        <div class="shortcut-row"><span>Delete points</span><span class="keys"><kbd>Del</kbd></span></div>
+      </div>
+    </section>
+
+    <!-- Canvas + Grid -->
+    <section class="shortcut-card">
+      <div class="shortcut-card__header">
+        <span class="material-symbols-outlined" style="font-size:14px;">grid_on</span>
+        <span class="p-title">Canvas &amp; Grid</span>
+      </div>
+      <div class="shortcut-list">
+        <div class="shortcut-row"><span>Zoom in / out</span><span class="keys kbd-combo"><kbd>Ctrl</kbd><span class="kbd-plus">+</span><kbd>Wheel</kbd></span></div>
+        <div class="shortcut-row"><span>Pan</span><span class="keys kbd-combo"><kbd>Space</kbd><span class="kbd-plus">+</span><kbd>drag</kbd></span></div>
+        <div class="shortcut-row"><span>Toggle grid</span><span class="keys"><kbd>G</kbd></span></div>
+        <div class="shortcut-row"><span>Toggle snap</span><span class="keys kbd-combo"><kbd>Shift</kbd><span class="kbd-plus">+</span><kbd>G</kbd></span></div>
+        <div class="shortcut-row"><span>Bypass snap while dragging</span><span class="keys"><kbd>Alt</kbd></span></div>
+        <div class="shortcut-row"><span>Show this dialog</span><span class="keys"><kbd>?</kbd></span></div>
+      </div>
+    </section>
+
+  </div>
+
+  <footer class="px-4 py-2.5 border-t flex items-center justify-between text-[10px] text-muted-foreground flex-shrink-0">
+    <span>Press <kbd>?</kbd> anywhere to reopen this sheet.</span>
+    <span>Press <kbd>Esc</kbd> to close.</span>
+  </footer>
+</dialog>
+
+<!-- Save-as-JSON dialog -->
+<dialog id="save-dialog" class="bg-card border rounded-xl p-0 max-w-md w-11/12 text-foreground">
+  <div class="p-4 border-b flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary">save</span>
+      <h3 class="text-sm font-semibold text-foreground">Save Icon</h3>
+    </div>
+    <button onclick="document.getElementById('save-dialog').close()" class="text-muted-foreground hover:text-foreground p-1 rounded">
+      <span class="material-symbols-outlined text-sm">close</span>
+    </button>
+  </div>
+  <div class="p-4 space-y-4">
+    <div>
+      <label class="text-[10px] uppercase font-bold text-muted-foreground/70 tracking-wider block mb-1">Icon Name</label>
+      <div class="input-field rounded-md px-3 py-2 flex items-center">
+        <span class="material-symbols-outlined text-sm text-muted-foreground mr-2">edit</span>
+        <input type="text" id="save-name" placeholder="e.g. my-icon (lowercase, hyphens)" class="font-mono" />
+      </div>
+      <div class="text-[10px] text-muted-foreground/60 mt-1">Lowercase, alphanumeric and hyphens only.</div>
+    </div>
+    <div>
+      <label class="text-[10px] uppercase font-bold text-muted-foreground/70 tracking-wider block mb-1">Category</label>
+      <div class="input-field rounded-md px-3 py-2 flex items-center">
+        <span class="material-symbols-outlined text-sm text-muted-foreground mr-2">folder</span>
+        <select id="save-category" class="w-full bg-transparent outline-none text-[12px] text-foreground font-mono"></select>
+      </div>
+    </div>
+    <div id="save-new-cat-wrap" class="hidden">
+      <label class="text-[10px] uppercase font-bold text-muted-foreground/70 tracking-wider block mb-1">New Category Name</label>
+      <div class="input-field rounded-md px-3 py-2 flex items-center">
+        <span class="material-symbols-outlined text-sm text-muted-foreground mr-2">create_new_folder</span>
+        <input type="text" id="save-new-cat" placeholder="e.g. logos" class="font-mono" />
+      </div>
+    </div>
+    <div class="text-[11px] text-muted-foreground bg-background rounded-md px-3 py-2 border">
+      <div class="flex items-center gap-1.5 mb-1"><span class="material-symbols-outlined text-sm text-primary">save</span><span class="font-semibold text-foreground">Writes directly to:</span></div>
+      <code class="text-primary font-mono text-[11px]" id="save-preview-path">brands/my-icon.json</code>
+      <div class="text-muted-foreground/70 mt-1.5 text-[10px]">Saved directly to disk via the Electron bridge. Commit and push &mdash; the GitHub Action will regenerate <code class="font-mono">&lt;category&gt;.json</code> and <code class="font-mono">index.json</code>.</div>
+    </div>
+  </div>
+  <div class="p-4 border-t flex justify-end gap-2">
+    <button onclick="document.getElementById('save-dialog').close()" class="btn btn-ghost btn-sm">Cancel</button>
+    <button id="save-confirm" class="btn btn-primary btn-sm">Save to Repo</button>
+  </div>
+</dialog>
+
+<script type="module" src="./assets/js/studio.js"></script>
+</body>
+</html>

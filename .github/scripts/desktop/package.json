@@ -1,0 +1,27 @@
+{
+    "name": "@pphatdev/icons-desktop",
+    "productName": "KFe Icons",
+    "version": "0.2.0",
+    "private": true,
+    "description": "KFe Icons — Nextron desktop app (Electron + Next.js + shadcn/ui)",
+    "main": "out/main/index.js",
+    "scripts": {
+        "setup": "npm install && cd renderer && npm install",
+        "dev": "concurrently -k -n next,elec -c blue,magenta \"npm:dev:next\" \"npm:dev:electron\"",
+        "dev:next": "cd renderer && npm run dev",
+        "dev:electron": "wait-on tcp:3000 && npm run build:main && cross-env NODE_ENV=development ELECTRON_RENDERER_URL=http://localhost:3000 electron .",
+        "build:main": "tsc -p main/tsconfig.json && tsc -p preload/tsconfig.json",
+        "build:renderer": "cd renderer && npm run build",
+        "build:legacy-css": "cd renderer && npx @tailwindcss/cli@4 -i public/legacy/assets/css/tailwind.css -o public/legacy/assets/css/tailwind.compiled.css --minify",
+        "build": "npm run build:main && npm run build:renderer",
+        "start": "cross-env NODE_ENV=production electron ."
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "concurrently": "^9.0.0",
+        "cross-env": "^7.0.3",
+        "electron": "^33.0.0",
+        "typescript": "^5.4.0",
+        "wait-on": "^8.0.0"
+    }
+}
