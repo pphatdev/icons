@@ -13,7 +13,10 @@
     "author": "",
     "license": "MIT",
     "devDependencies": {
+        "@tailwindcss/node": "^4.3.3",
+        "@tailwindcss/oxide": "^4.3.3",
         "@types/node": "^20.0.0",
+        "tailwindcss": "^4.3.3",
         "tsup": "^8.0.0",
         "tsx": "^4.7.0",
         "typescript": "^5.0.0"

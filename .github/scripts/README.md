@@ -57,51 +57,58 @@ Vector editor for SVG icons.
 
 Registry files are never modified. Use `Copy SVG` or `Download` to persist changes off-server.
 
-### `/graph`
-
-Read-only dashboard of registry-wide metrics:
-
-- Total icons, categories, average shapes/icon, total & average SVG source size
-- Icons per category (horizontal bar chart)
-- Complexity distribution (bucketed by shape count)
-- Size distribution (bucketed by SVG source bytes)
-- Top 10 largest icons
-
 ## Project layout
 
 ```
 .github/scripts/
-├── demo-server.ts               # Static file server (paths + fallback to repo root)
+├── demo-server.ts               # Static file server + on-demand Tailwind compile
 ├── demo/
 │   ├── browse.html              # /browse
 │   ├── studio.html              # /studio
-│   ├── graph.html               # /graph
 │   └── assets/
 │       ├── css/
-│       │   └── main.css         # Shared styles for all three pages
+│       │   └── tailwind.css     # Tailwind v4 source (@theme, @source, @custom-variant)
 │       └── js/
 │           ├── data.js          # Icon loading (index.json → *.json → SVGs)
 │           ├── shell.js         # Nav active state, stats badge, toast
 │           ├── browse.js        # /browse logic
-│           ├── studio.js        # /studio editor (drag, undo/redo, props, new icon)
-│           └── graph.js         # /graph metrics + charts
+│           └── studio.js        # /studio editor (drag, undo/redo, props, new icon)
 ├── update-category.ts           # Regenerates <category>.json index files
 ├── package.json                 # Scripts: demo, update-category, build
 └── README.md
 ```
 
+## Styling — Tailwind CSS v4 (no CDN)
+
+The demo used to load Tailwind from `cdn.tailwindcss.com`. It now uses local
+Tailwind v4 compiled by `demo-server.ts` on demand:
+
+- `demo/assets/css/tailwind.css` is the source. It uses `@import "tailwindcss"`,
+  a `@theme` block for the KFE color palette / fonts / radii, `@source`
+  globs pointing at `*.html` + `assets/js/*.js`, and a `@custom-variant dark`
+  so `<html class="dark">` still opts pages into dark styling.
+- On each request for `/assets/css/tailwind.css`, the server compiles via
+  `@tailwindcss/node` and rescans class candidates via `@tailwindcss/oxide`.
+  Output is cached and reused until the source CSS or any scanned file's
+  mtime changes, so edits appear on the next reload without a build step.
+
+Add a new custom color? Add `--color-<name>: #hex;` under `@theme` in
+`tailwind.css` — no server restart needed, just reload the page.
+
 ## How the server routes requests
 
-`demo-server.ts` handles four kinds of requests:
+`demo-server.ts` handles five kinds of requests:
 
 1. `/` — 302 redirect to `/browse`
-2. `/browse`, `/studio`, `/graph` — served from `demo/*.html`
-3. `/assets/**` — served from `demo/assets/**`
-4. Anything else — served from the repo root (so `/index.json`, `/brands.json`, `/brands/react.json` etc. all work)
+2. `/browse`, `/studio` — served from `demo/*.html`
+3. `GET /assets/css/tailwind.css` — compiled on demand from the Tailwind source
+4. `/assets/**` — otherwise served from `demo/assets/**`
+5. Anything else — served from the repo root (so `/index.json`, `/brands.json`, `/brands/react.json` etc. all work)
 
 Path traversal is blocked by requiring the resolved path to stay inside the intended root.
 
 ## Notes
 
-- No build step, no runtime dependencies. Everything is vanilla ES modules loaded directly by the browser.
+- Zero client-side build step. The browser still loads only vanilla ES modules;
+  Tailwind is compiled server-side on request.
 - Custom icons are stored under the `kfe-custom-icons` `localStorage` key. Clear browser storage to reset.

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Studio · KFe Icons</title>
+<link rel="stylesheet" href="./assets/css/tailwind.css" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-25..0" />
+</head>
+<body class="flex flex-col bg-surface h-screen">
+
+<!-- ==========================================================
+     TOP TOOLBAR
+     Left cluster: brand + file name
+     Center cluster: tool palette (was previously a floating bottom bar)
+     Right cluster: primary actions
+     ========================================================== -->
+<header class="h-12 border-b ui-border flex items-center justify-between px-3 bg-surface-container-low z-20 flex-shrink-0">
+  <div class="flex items-center gap-3 min-w-0">
+    <div class="flex items-center gap-2 flex-shrink-0">
+      <div class="w-6 h-6 bg-primary rounded flex items-center justify-center">
+        <span class="text-[10px] font-bold text-white">K</span>
+      </div>
+      <span class="font-medium text-sm text-on-surface">KFe Icons</span>
+    </div>
+    <span class="text-outline">/</span>
+    <span id="current-name" class="text-on-surface-variant text-[11px] font-mono opacity-70 truncate">untitled</span>
+  </div>
+
+  <!-- Tool palette, now anchored in the top bar -->
+  <div id="tools-palette" class="flex items-center gap-0.5 bg-surface-container-lowest border border-outline-variant rounded-lg px-1 py-1">
+    <button data-tool="select" class="tool-btn active" title="Select (V)">
+      <span class="material-symbols-outlined" style="font-size: 18px;">near_me</span>
+    </button>
+    <div class="w-px h-5 bg-outline-variant mx-1"></div>
+    <button data-tool="rect" class="tool-btn" title="Rectangle (R)">
+      <span class="material-symbols-outlined" style="font-size: 18px;">check_box_outline_blank</span>
+    </button>
+    <button data-tool="ellipse" class="tool-btn" title="Ellipse (O)">
+      <span class="material-symbols-outlined" style="font-size: 18px;">circle</span>
+    </button>
+    <button data-tool="line" class="tool-btn" title="Line (L)">
+      <span class="material-symbols-outlined" style="font-size: 18px;">horizontal_rule</span>
+    </button>
+    <button data-tool="pen" class="tool-btn" title="Pen — click to add points, Enter to finish, Z to close (P)">
+      <span class="material-symbols-outlined" style="font-size: 18px;">stylus_note</span>
+    </button>
+    <button data-tool="pencil" class="tool-btn" title="Pencil — press and drag to draw freehand (N)">
+      <span class="material-symbols-outlined" style="font-size: 18px;">edit</span>
+    </button>
+    <div class="w-px h-5 bg-outline-variant mx-1"></div>
+    <button id="undo" class="tool-btn" title="Undo (Ctrl+Z)" disabled>
+      <span class="material-symbols-outlined" style="font-size: 18px;">undo</span>
+    </button>
+    <button id="redo" class="tool-btn" title="Redo (Ctrl+Y)" disabled>
+      <span class="material-symbols-outlined" style="font-size: 18px;">redo</span>
+    </button>
+    <div class="w-px h-5 bg-outline-variant mx-1"></div>
+    <button id="tool-duplicate" class="tool-btn" title="Duplicate (Ctrl+D)">
+      <span class="material-symbols-outlined" style="font-size: 18px;">content_copy</span>
+    </button>
+    <button id="tool-delete" class="tool-btn" title="Delete (Del)">
+      <span class="material-symbols-outlined" style="font-size: 18px;">delete</span>
+    </button>
+  </div>
+
+  <div class="flex items-center gap-2">
+    <button id="copy" class="btn btn-ghost btn-icon" title="Copy SVG">
+      <span class="material-symbols-outlined" style="font-size: 18px;">content_copy</span>
+    </button>
+    <button id="download" class="btn btn-primary btn-sm">Export</button>
+  </div>
+</header>
+
+<!-- ==========================================================
+     BODY: rail + layers panel + canvas + inspector
+     ========================================================== -->
+<div class="flex flex-1 overflow-hidden min-h-0">
+  <!-- Icon rail (page nav + studio actions) -->
+  <aside class="w-14 border-r ui-border flex flex-col items-center py-3 gap-1 bg-surface-container-lowest z-10 flex-shrink-0">
+    <a href="./index.html" class="rail-btn" title="Browse all icons">
+      <span class="material-symbols-outlined">grid_view</span>
+      <span class="lbl">Browse</span>
+    </a>
+    <a href="./studio.html" class="rail-btn active" title="Studio (current)">
+      <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">edit</span>
+      <span class="lbl">Studio</span>
+    </a>
+    <div class="w-6 border-t ui-border my-2"></div>
+    <button id="new-icon" class="rail-btn" title="Create new icon">
+      <span class="material-symbols-outlined">add</span>
+      <span class="lbl">New</span>
+    </button>
+    <button id="reset" class="rail-btn" title="Reset icon">
+      <span class="material-symbols-outlined">refresh</span>
+      <span class="lbl">Reset</span>
+    </button>
+    <div class="flex-1"></div>
+  </aside>
+
+  <!-- Layers dock -->
+  <aside class="w-56 border-r ui-border flex flex-col bg-surface-container-low z-10 flex-shrink-0">
+    <div class="p-3 border-b ui-border flex-shrink-0">
+      <div class="input-field rounded-lg px-2.5 py-1.5 flex items-center gap-2">
+        <span class="material-symbols-outlined text-sm text-on-surface-variant">search</span>
+        <input id="icon-search" type="text" placeholder="Search icons…" class="text-[11px] bg-transparent border-none" />
+      </div>
+    </div>
+    <div class="flex-1 overflow-y-auto scrollbar-hide px-2 py-2">
+      <div class="flex items-center justify-between px-2 mb-2">
+        <span class="p-title">Icons</span>
+        <button id="new-icon-sm" class="w-5 h-5 flex items-center justify-center rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high" title="New icon">
+          <span class="material-symbols-outlined text-sm">add</span>
+        </button>
+      </div>
+      <div id="icon-list" class="space-y-0.5"></div>
+    </div>
+  </aside>
+
+  <!-- Canvas -->
+  <main class="flex-1 relative bg-surface-container-lowest overflow-hidden canvas-grid min-w-0">
+    <div class="absolute top-3 left-3 text-[11px] text-on-surface-variant/60 font-medium tracking-wide uppercase z-10" id="canvas-label"></div>
+
+    <!-- Canvas overlays: grid/snap, preview color, center-selection -->
+    <div class="absolute top-3 right-3 flex items-center gap-2 z-10">
+      <div class="flex items-center gap-1 glass-panel border border-white/5 rounded-lg px-2 py-1">
+        <button id="toggle-grid" class="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-white/10" title="Grid overlay (G)">
+          <span class="material-symbols-outlined" style="font-size:16px;">grid_on</span>
+        </button>
+        <button id="toggle-snap" class="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-white/10" title="Snap to grid (Shift+G) — hold Alt to bypass while dragging">
+          <span class="material-symbols-outlined" style="font-size:16px;">grid_3x3</span>
+        </button>
+        <div class="flex items-center bg-white/5 border border-white/10 rounded px-1.5 h-6 gap-1" title="Grid / snap size (viewBox units)">
+          <input type="number" id="grid-size" min="0.25" step="0.25" value="1" class="w-8 bg-transparent border-none outline-none text-[11px] text-white font-mono p-0 text-center" />
+        </div>
+        <button id="show-help" class="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-white/10" title="Keyboard shortcuts (?)">
+          <span class="material-symbols-outlined" style="font-size:16px;">keyboard</span>
+        </button>
+      </div>
+      <div class="flex items-center gap-1 glass-panel border border-white/5 rounded-lg px-2 py-1">
+        <span class="text-[10px] text-on-surface-variant/70 font-medium">Preview</span>
+        <button class="preview-swatch" data-preview="#e1e1e1" title="Default"></button>
+        <button class="preview-swatch" data-preview="#ffffff" title="White"></button>
+        <button class="preview-swatch" data-preview="#000000" title="Black"></button>
+        <button class="preview-swatch" data-preview="#0d99ff" title="Blue"></button>
+        <button class="preview-swatch" data-preview="#22c55e" title="Green"></button>
+        <button class="preview-swatch" data-preview="#ef4444" title="Red"></button>
+        <input id="preview-color" type="color" value="#e1e1e1" title="Custom preview color" class="w-6 h-6 rounded cursor-pointer bg-transparent border border-white/10 p-0" />
+      </div>
+      <button id="center" class="text-[11px] px-2 py-1 rounded-lg glass-panel text-on-surface-variant hover:text-on-surface border border-white/5" title="Clear transform on selection">
+        <span class="material-symbols-outlined text-sm align-middle">crop_free</span>
+      </button>
+    </div>
+
+    <div class="absolute inset-0 flex items-center justify-center">
+      <div class="relative" id="canvas-wrap">
+        <div id="canvas-host"></div>
+        <div id="handles" class="absolute inset-0 pointer-events-none"></div>
+        <!-- Floating quick-edit popover, positioned by JS near the selection -->
+        <div id="quick-actions" class="absolute glass-panel border border-white/10 rounded-lg shadow-2xl px-1.5 py-1 flex items-center gap-1 z-10 hidden">
+          <label class="qa-btn" title="Fill color">
+            <span class="material-symbols-outlined" style="font-size:16px;">format_color_fill</span>
+            <input type="color" id="qa-fill" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+          </label>
+          <label class="qa-btn" title="Stroke color">
+            <span class="material-symbols-outlined" style="font-size:16px;">border_color</span>
+            <input type="color" id="qa-stroke" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+          </label>
+          <div class="flex items-center bg-white/5 border border-white/10 rounded px-1.5 h-6 gap-1" title="Stroke width">
+            <span class="material-symbols-outlined text-white/60" style="font-size:12px;">line_weight</span>
+            <input type="number" id="qa-stroke-w" min="0" step="0.5" placeholder="0" class="w-8 bg-transparent border-none outline-none text-[11px] text-white font-mono p-0" />
+          </div>
+          <div class="w-px h-4 bg-white/10 mx-0.5"></div>
+          <button class="qa-btn hidden" id="qa-edit-path" title="Edit path points (Enter)">
+            <span class="material-symbols-outlined" style="font-size:16px;">edit_note</span>
+          </button>
+          <button class="qa-btn" id="qa-duplicate" title="Duplicate (Ctrl+D)">
+            <span class="material-symbols-outlined" style="font-size:16px;">content_copy</span>
+          </button>
+          <button class="qa-btn text-red-400 hover:text-red-300" id="qa-delete" title="Delete">
+            <span class="material-symbols-outlined" style="font-size:16px;">delete</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Inspector -->
+  <aside class="w-72 border-l ui-border flex flex-col bg-surface-container-low z-10 flex-shrink-0">
+    <div class="flex items-center border-b ui-border px-3 flex-shrink-0 h-11">
+      <span class="text-xs text-on-surface font-semibold">Design</span>
+      <div class="flex-1"></div>
+      <div id="zoom-display" class="text-on-surface-variant text-[11px] font-mono opacity-60">100%</div>
+    </div>
+    <div id="props" class="overflow-y-auto scrollbar-hide flex-1 p-4 space-y-5"></div>
+    <div class="border-t ui-border p-3 flex-shrink-0">
+      <div class="flex items-center justify-between mb-2 px-1">
+        <span class="p-title">Elements</span>
+        <span id="tree-count" class="text-[10px] text-on-surface-variant/60 font-mono">0</span>
+      </div>
+      <div id="tree" class="max-h-48 overflow-auto scrollbar-hide space-y-0.5"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- ==========================================================
+     STATUS BAR (bottom)
+     Was: floating zoom widget bottom-right + stats hidden in the header.
+     Now: consolidated persistent bar.
+     ========================================================== -->
+<footer class="h-7 border-t ui-border flex items-center justify-between px-3 bg-surface-container-low text-[11px] text-on-surface-variant font-mono flex-shrink-0 z-10">
+  <div class="flex items-center gap-3">
+    <span id="stats" class="opacity-70">loading…</span>
+  </div>
+  <div class="flex items-center gap-1">
+    <button id="zoom-out" class="w-5 h-5 flex items-center justify-center rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high" title="Zoom out">
+      <span class="material-symbols-outlined" style="font-size:14px;">remove</span>
+    </button>
+    <span id="zoom-label" class="min-w-[42px] text-center opacity-80">100%</span>
+    <button id="zoom-in" class="w-5 h-5 flex items-center justify-center rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high" title="Zoom in">
+      <span class="material-symbols-outlined" style="font-size:14px;">add</span>
+    </button>
+  </div>
+</footer>
+
+<!-- Keyboard shortcut cheat sheet -->
+<dialog id="help-dialog" class="bg-surface-container border border-outline-variant rounded-xl p-0 max-w-2xl w-11/12 text-on-surface">
+  <div class="p-4 border-b ui-border flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary">keyboard</span>
+      <h3 class="text-sm font-semibold text-on-surface">Keyboard Shortcuts</h3>
+    </div>
+    <button onclick="document.getElementById('help-dialog').close()" class="text-on-surface-variant hover:text-on-surface p-1 rounded">
+      <span class="material-symbols-outlined text-sm">close</span>
+    </button>
+  </div>
+  <div class="p-5 grid grid-cols-2 gap-x-8 gap-y-5 text-[12px]">
+    <div>
+      <div class="p-title mb-2">Tools</div>
+      <div class="space-y-1.5 font-mono text-on-surface-variant">
+        <div class="flex justify-between"><span>Select</span><kbd>V</kbd></div>
+        <div class="flex justify-between"><span>Rectangle</span><kbd>R</kbd></div>
+        <div class="flex justify-between"><span>Ellipse</span><kbd>O</kbd></div>
+        <div class="flex justify-between"><span>Line</span><kbd>L</kbd></div>
+        <div class="flex justify-between"><span>Pen (click-add-points)</span><kbd>P</kbd></div>
+        <div class="flex justify-between"><span>Pencil (freehand drag)</span><kbd>N</kbd></div>
+        <div class="flex justify-between"><span>Constrain draw (square / circle / 45°)</span><kbd>Shift-drag</kbd></div>
+        <div class="flex justify-between"><span>Pen — finish / close / cancel</span><kbd>Enter / Z / Esc</kbd></div>
+        <div class="flex justify-between"><span>Pen — remove last point</span><kbd>Backspace</kbd></div>
+      </div>
+    </div>
+    <div>
+      <div class="p-title mb-2">Grid & snap</div>
+      <div class="space-y-1.5 font-mono text-on-surface-variant">
+        <div class="flex justify-between"><span>Toggle grid</span><kbd>G</kbd></div>
+        <div class="flex justify-between"><span>Toggle snap</span><kbd>Shift+G</kbd></div>
+        <div class="flex justify-between"><span>Bypass snap while dragging</span><kbd>Alt</kbd></div>
+      </div>
+    </div>
+    <div>
+      <div class="p-title mb-2">Selection</div>
+      <div class="space-y-1.5 font-mono text-on-surface-variant">
+        <div class="flex justify-between"><span>Move selection</span><kbd>Arrow</kbd></div>
+        <div class="flex justify-between"><span>Move 10×</span><kbd>Shift+Arrow</kbd></div>
+        <div class="flex justify-between"><span>Duplicate</span><kbd>Ctrl+D</kbd></div>
+        <div class="flex justify-between"><span>Copy / paste</span><kbd>Ctrl+C / V</kbd></div>
+        <div class="flex justify-between"><span>Delete</span><kbd>Del</kbd></div>
+        <div class="flex justify-between"><span>Undo / redo</span><kbd>Ctrl+Z / Y</kbd></div>
+        <div class="flex justify-between"><span>Bring forward / back</span><kbd>Ctrl+] / [</kbd></div>
+        <div class="flex justify-between"><span>Group / ungroup</span><kbd>Ctrl+G / Ctrl+Shift+G</kbd></div>
+        <div class="flex justify-between"><span>Lock / unlock</span><kbd>Ctrl+Shift+L</kbd></div>
+      </div>
+    </div>
+    <div>
+      <div class="p-title mb-2">Path edit</div>
+      <div class="space-y-1.5 font-mono text-on-surface-variant">
+        <div class="flex justify-between"><span>Enter / exit edit mode</span><kbd>Enter / Esc</kbd></div>
+        <div class="flex justify-between"><span>Double-click path</span><kbd>Edit</kbd></div>
+        <div class="flex justify-between"><span>Double-click segment</span><kbd>Insert point</kbd></div>
+        <div class="flex justify-between"><span>Multi-select shapes or points</span><kbd>Shift-click</kbd></div>
+        <div class="flex justify-between"><span>Merge selected shapes</span><kbd>(Merge in props)</kbd></div>
+        <div class="flex justify-between"><span>Marquee (rubber-band)</span><kbd>Drag empty</kbd></div>
+        <div class="flex justify-between"><span>Select all points</span><kbd>Ctrl+A</kbd></div>
+        <div class="flex justify-between"><span>Delete points</span><kbd>Del</kbd></div>
+      </div>
+    </div>
+    <div>
+      <div class="p-title mb-2">Canvas</div>
+      <div class="space-y-1.5 font-mono text-on-surface-variant">
+        <div class="flex justify-between"><span>Zoom in / out</span><kbd>Ctrl+Wheel</kbd></div>
+        <div class="flex justify-between"><span>Pan</span><kbd>Space+drag</kbd></div>
+        <div class="flex justify-between"><span>Show this dialog</span><kbd>?</kbd></div>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<!-- Save-as-JSON dialog -->
+<dialog id="save-dialog" class="bg-surface-container border border-outline-variant rounded-xl p-0 max-w-md w-11/12 text-on-surface">
+  <div class="p-4 border-b ui-border flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary">save</span>
+      <h3 class="text-sm font-semibold text-on-surface">Save Icon</h3>
+    </div>
+    <button onclick="document.getElementById('save-dialog').close()" class="text-on-surface-variant hover:text-on-surface p-1 rounded">
+      <span class="material-symbols-outlined text-sm">close</span>
+    </button>
+  </div>
+  <div class="p-4 space-y-4">
+    <div>
+      <label class="text-[10px] uppercase font-bold text-on-surface-variant/60 tracking-wider block mb-1">Icon Name</label>
+      <div class="input-field rounded-lg px-3 py-2 flex items-center">
+        <span class="material-symbols-outlined text-sm text-on-surface-variant mr-2">edit</span>
+        <input type="text" id="save-name" placeholder="e.g. my-icon (lowercase, hyphens)" class="font-mono" />
+      </div>
+      <div class="text-[10px] text-on-surface-variant/50 mt-1">Lowercase, alphanumeric and hyphens only.</div>
+    </div>
+    <div>
+      <label class="text-[10px] uppercase font-bold text-on-surface-variant/60 tracking-wider block mb-1">Category</label>
+      <div class="input-field rounded-lg px-3 py-2 flex items-center">
+        <span class="material-symbols-outlined text-sm text-on-surface-variant mr-2">folder</span>
+        <select id="save-category" class="w-full bg-transparent outline-none text-[12px] text-on-surface font-mono"></select>
+      </div>
+    </div>
+    <div id="save-new-cat-wrap" class="hidden">
+      <label class="text-[10px] uppercase font-bold text-on-surface-variant/60 tracking-wider block mb-1">New Category Name</label>
+      <div class="input-field rounded-lg px-3 py-2 flex items-center">
+        <span class="material-symbols-outlined text-sm text-on-surface-variant mr-2">create_new_folder</span>
+        <input type="text" id="save-new-cat" placeholder="e.g. logos" class="font-mono" />
+      </div>
+    </div>
+    <div class="text-[11px] text-on-surface-variant bg-surface-container-lowest rounded-lg px-3 py-2 border border-outline-variant">
+      <div class="flex items-center gap-1.5 mb-1"><span class="material-symbols-outlined text-sm text-primary">save</span><span class="font-semibold">Writes directly to:</span></div>
+      <code class="text-primary font-mono text-[11px]" id="save-preview-path">brands/my-icon.json</code>
+      <div class="text-on-surface-variant/60 mt-1.5 text-[10px]">Saved directly to disk via the Electron bridge. Commit and push &mdash; the GitHub Action will regenerate <code class="font-mono">&lt;category&gt;.json</code> and <code class="font-mono">index.json</code>.</div>
+    </div>
+  </div>
+  <div class="p-4 border-t flex justify-end gap-2">
+    <button onclick="document.getElementById('save-dialog').close()" class="btn btn-ghost btn-sm">Cancel</button>
+    <button id="save-confirm" class="btn btn-primary btn-sm">Save to Repo</button>
+  </div>
+</dialog>
+
+<script type="module" src="./assets/js/studio.js"></script>
+</body>
+</html>
